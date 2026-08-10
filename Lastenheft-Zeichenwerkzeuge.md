@@ -8,7 +8,13 @@
 > Z-05 (Sperren/Ausblenden), Z-06 (Schnellverbinder-Ring), Z-13 (Groesse
 > angleichen), Z-14 (Formatpinsel), Z-15 (Stil-Panel), Z-16 (An Fenster
 > anpassen), Z-17 (Lineale mit Hilfslinien), Z-18 (Druckseiten-Vorschau).
-> Offen sind im Wesentlichen noch Z-02, Z-07, Z-08, Z-09, Z-10 und Z-19.
+> Nachtrag 08/2026: Auch Z-02 (Seitenverhaeltnis-Sperre per Shift, an Einzel-
+> UND Gruppen-Resize), Z-07 (freie Verbindungspunkte am Shape-Rand), Z-08
+> (Verbindungsstil im Eigenschaften-Panel waehlbar), Z-09 (Line Jumps) und
+> Z-10 (Wegpunkt per Doppelklick auf ein Segment) sind umgesetzt und im Code
+> nachgewiesen. **Damit ist von diesem Dokument nur noch Z-19 offen**
+> (Tab-Workflow: Tab waehrend der Texteingabe erzeugt ein neues, verbundenes
+> Geschwister-Element) - eine "Kann"-Anforderung.
 > Belege in `Befundbericht-App-Analyse.md`, Abschnitt 4.1.
 
 Status: Entwurf (Anforderungserhebung durch Vergleich mit draw.io)
