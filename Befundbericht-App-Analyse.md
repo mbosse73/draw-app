@@ -1,7 +1,8 @@
 # Befundbericht: Analyse des BPMN-Editors
 
 Stand: 2026-08-10
-Untersuchungsgegenstand: `bpmn-editor.html` (das ausgelieferte Einzeldatei-Artefakt)
+Untersuchungsgegenstand: `index.html` im Wurzelverzeichnis (das ausgelieferte
+Einzeldatei-Artefakt; hieß zum Zeitpunkt der Untersuchung `bpmn-editor.html`)
 Methode: automatisierte Interaktionstests im echten Browser (Chromium/Playwright),
 Vergleich von Bildschirmdarstellung und Exportergebnis, Auswertung der Exportformate.
 

@@ -8,13 +8,19 @@ in diesem Repository.
 **Wichtig: Das Git-Repository (`mbosse73/draw-app`) enthält derzeit nur das gebaute
 Artefakt und Dokumentation — nicht das Quellprojekt.** Ein frischer Clone enthält:
 
-- `bpmn-editor.html` — das **gebaute, einteilige Produktions-Artefakt** (minifiziert,
-  React 19 + Zustand + gesamter App-Code via `vite-plugin-singlefile` inline gebündelt),
-  d.h. eine Kopie von `bpmn-editor-source/dist/index.html`. Das ist das Deliverable, das
-  der Endnutzer tatsächlich bekommt (direkt per Doppelklick geöffnet, kein Server) —
+- `index.html` (im Repository-Wurzelverzeichnis) — das **gebaute, einteilige
+  Produktions-Artefakt** (minifiziert, React 19 + Zustand + gesamter App-Code via
+  `vite-plugin-singlefile` inline gebündelt), d.h. eine Kopie von
+  `bpmn-editor-source/dist/index.html`. Das ist das Deliverable, das der Endnutzer
+  tatsächlich bekommt (direkt per Doppelklick geöffnet, kein Server) —
   **niemals von Hand editieren** und niemals versuchen, das minifizierte Bundle zu
   reverse-engineeren oder zu patchen. Es wird ausschließlich durch einen frischen Build
   aus dem Quellprojekt ersetzt.
+  Nicht verwechseln: `index.html` **im Wurzelverzeichnis** ist das fertige Artefakt,
+  `bpmn-editor-source/index.html` ist die Vite-Einstiegsseite der Entwicklung (mit dem
+  Inline-Skript für das Theme), und `bpmn-editor-source/dist/index.html` ist das
+  Build-Ergebnis. Hieß bis 08/2026 `bpmn-editor.html`; der Name `index.html` erlaubt
+  es, die App über GitHub Pages direkt unter der Repository-URL auszuliefern.
 - `Lastenheft-Zeichenwerkzeuge.md` — Lastenheft (deutsch) für Verbesserungen an
   Zeichenfläche und Zeichenwerkzeugen, abgeleitet aus einem Funktionsvergleich mit
   draw.io. Jede Anforderung (Z-01 … Z-19) nennt den beobachteten Ist-Zustand mit
@@ -30,8 +36,8 @@ Artefakt und Dokumentation — nicht das Quellprojekt.** Ein frischer Clone enth
   `npm run build` von innerhalb dieses Verzeichnisses ausführen — siehe Build & Start
   unten), aber es existiert nur auf dem Rechner des Maintainers und **wurde noch nicht
   in dieses Repository committet**. Fehlt es im Checkout, sind Änderungen auf
-  Quellcode-Ebene unmöglich — das explizit sagen, statt zu versuchen,
-  `bpmn-editor.html` zu editieren; die Architektur-Abschnitte unten dienen dann als
+  Quellcode-Ebene unmöglich — das explizit sagen, statt zu versuchen, das
+  Wurzel-`index.html` zu editieren; die Architektur-Abschnitte unten dienen dann als
   Referenz, um Fragen zur App zu beantworten.
 - `BPMN-Editor-Technische-Dokumentation.md` — ein ausführliches technisches
   Übergabedokument (deutsch), das die Architektur im Detail beschreibt; ebenfalls nicht
@@ -44,13 +50,13 @@ Top-Level-Artefakt kopieren:
 ```bash
 # bash
 cd bpmn-editor-source && npm run build
-cp dist/index.html ../bpmn-editor.html
+cp dist/index.html ../index.html
 ```
 
 ```powershell
 # PowerShell (der Rechner des Maintainers läuft unter Windows)
 cd bpmn-editor-source; npm run build
-Copy-Item dist/index.html ../bpmn-editor.html -Force
+Copy-Item dist/index.html ../index.html -Force
 ```
 
 ## Projektüberblick (aus der technischen Dokumentation)
@@ -89,9 +95,9 @@ npm run build    # Produktions-Build -> dist/index.html (das einteilige Delivera
 npm run preview  # den Produktions-Build lokal testen
 ```
 
-Nach `npm run build` die `dist/index.html` über die Top-Level-Datei
-`../bpmn-editor.html` kopieren, um die Änderung tatsächlich auszuliefern (siehe oben) —
-die beiden sind sonst nicht synchron.
+Nach `npm run build` die `dist/index.html` über die Top-Level-Datei `../index.html`
+kopieren, um die Änderung tatsächlich auszuliefern (siehe oben) — die beiden sind sonst
+nicht synchron.
 
 ## Zentrales Architekturprinzip: Core/Plugin-Trennung
 
