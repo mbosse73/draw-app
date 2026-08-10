@@ -1,5 +1,16 @@
 # Lastenheft: Zeichenwerkzeuge & Zeichenflächen-Komfort
 
+> **⚠️ Ueberholt (Stand 08/2026).** Die Spalte „Ist-Zustand" beschreibt einen
+> aelteren Stand der App. Nachgeprueft am laufenden Programm sind **elf der
+> aufgefuehrten Anforderungen bereits umgesetzt** — darunter alle drei, die
+> dieses Dokument selbst als wichtigste Empfehlung nennt:
+> Z-01/Z-03 (8 Resize-Griffe, auch bei Mehrfachauswahl), Z-04 (Spiegeln),
+> Z-05 (Sperren/Ausblenden), Z-06 (Schnellverbinder-Ring), Z-13 (Groesse
+> angleichen), Z-14 (Formatpinsel), Z-15 (Stil-Panel), Z-16 (An Fenster
+> anpassen), Z-17 (Lineale mit Hilfslinien), Z-18 (Druckseiten-Vorschau).
+> Offen sind im Wesentlichen noch Z-02, Z-07, Z-08, Z-09, Z-10 und Z-19.
+> Belege in `Befundbericht-App-Analyse.md`, Abschnitt 4.1.
+
 Status: Entwurf (Anforderungserhebung durch Vergleich mit draw.io)
 Bezug: `bpmn-editor-source/src/core/canvas/` (CanvasEngine.tsx, ResizeHandle.tsx, pathRouting.ts, alignmentGuides.ts, GridLayer.tsx)
 

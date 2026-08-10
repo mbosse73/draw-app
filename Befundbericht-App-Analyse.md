@@ -1,5 +1,24 @@
 # Befundbericht: Analyse des BPMN-Editors
 
+> **Bearbeitungsstand 08/2026 — der Grossteil dieser Befunde ist behoben.**
+> Erledigt und jeweils per Testlauf bestaetigt: **F-01** (Export ignorierte das
+> Stil-Panel), **F-02** (ausgeblendete Elemente im Export), **F-03/F-04**
+> (Fuellung wurde Schraffur, Tooltip-Text unsichtbar), **F-05** (linksbuendige
+> Labels zentriert), **F-06** (Text-Grundlinien), **F-07/F-08/F-09**
+> (BPMN-XML: fehlende Ereignis-Definitionen, ungueltige Pool-Referenzen,
+> Throw- statt Catch-Events), **F-12** (Einfuegen stapelte Kopien),
+> **F-13** (Strg+D). `npm run check:export` meldet 64 von 64 Shape-Typen im
+> Rahmen (zu Beginn der Analyse: 36 von 64).
+>
+> **Offen:** F-10 (kein Hinweis beim BPMN-Export eines Diagramms ohne
+> BPMN-Elemente), F-11 (Verbindungs-Port von der Verschiebe-Trefffläche
+> ueberdeckt) sowie zwei Inkonsistenzen: `core/io/imageExport.ts` importiert
+> `sketch.ts` aus dem Wireframe-Modul, und das Stil-Panel bleibt bei
+> Wireframe-Shapes wirkungslos (auch auf dem Bildschirm).
+>
+> Der folgende Text ist der urspruengliche Befund und bleibt als Beleg und
+> Reproduktionsanleitung unveraendert stehen.
+
 Stand: 2026-08-10
 Untersuchungsgegenstand: `index.html` im Wurzelverzeichnis (das ausgelieferte
 Einzeldatei-Artefakt; hieß zum Zeitpunkt der Untersuchung `bpmn-editor.html`)

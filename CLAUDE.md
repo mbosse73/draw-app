@@ -5,8 +5,7 @@ in diesem Repository.
 
 ## Aktueller Stand dieses Repositorys
 
-**Wichtig: Das Git-Repository (`mbosse73/draw-app`) enthält derzeit nur das gebaute
-Artefakt und Dokumentation — nicht das Quellprojekt.** Ein frischer Clone enthält:
+Ein frischer Clone enthält:
 
 - `index.html` (im Repository-Wurzelverzeichnis) — das **gebaute, einteilige
   Produktions-Artefakt** (minifiziert, React 19 + Zustand + gesamter App-Code via
@@ -91,7 +90,9 @@ Laufzeit-Abhängigkeiten: `react`, `react-dom`, `zustand`, plus **`roughjs`**
 bewusste, dokumentierte Ausnahme, siehe `modules/wireframe/shapes/sketch.ts` und
 Doku-Abschnitt 4.7). Bewusst **keine** Diagramm-Bibliothek (z.B. `bpmn-js`) — sämtliche
 Rendering- und Interaktionslogik ist Eigenbau, gemäß ursprünglicher Spezifikation. Es
-gibt **keine automatisierte Testsuite**; Verifikation lief historisch über
+gibt **eine einzige automatisierte Pruefung**: `npm run check:export` vergleicht jeden
+registrierten Shape-Typ pixelweise zwischen Bildschirm und SVG-Export (siehe
+`scripts/check-export.mjs`, Exit-Code 1 bei Abweichung). Darueber hinaus lief Verifikation historisch über
 Wegwerf-Skripte per `npx tsx <script>.ts` direkt in Node (Zustand und Kernlogik sind
 DOM-unabhängig), die nach Gebrauch gelöscht wurden.
 
@@ -250,7 +251,7 @@ Etwas davon zu vergessen erzeugt keinen Fehler — es produziert stillschweigend
 falsches/fehlendes Element in genau dieser einen Ausgabe. Beim Hinzufügen oder Ändern
 eines Shape-Typs alle vier Stellen aktualisieren.
 
-**Für das Wireframe-Modul ist das gelöst** (nicht rückwirkend auf BPMN übertragen):
+**Für das Wireframe-Modul ist das Muster angelegt, aber es genügt nicht** (Stand 08/2026):
 `modules/wireframe/shapes/sketch.ts` kapselt `rough.generator()` aus `roughjs` als
 pure, DOM-freie Funktionen (`sketchRect`, `sketchLine`, `sketchCircle`, `sketchPath`,
 alle über `seedFor(shapeId, discriminator)` geseedet für deterministisches, nicht
@@ -259,6 +260,14 @@ flackerndes „Wackeln"), die identische Pfaddaten sowohl an den Live-JSX-Render
 `renderWireframeShapeToStaticSvg()` in `imageExport.ts` liefern. Die eigentliche
 „Wie sieht dieses Shape aus"-Logik existiert genau einmal pro Shape-Typ; nur die
 *Registrierung* an drei Stellen bleibt (jetzt mechanisch, nicht fehleranfällig).
+> **Nachgemessen und widerlegt:** Die geteilten Primitive sichern nur die
+> *Geometrie der Umrisse*. Füllung und Textplatzierung wurden in Live-Renderer
+> und Export weiterhin getrennt bestimmt und waren auseinandergelaufen — 28 von
+> 64 Typen wichen sichtbar ab (fehlendes `fillStyle: "solid"` liess Füllungen zu
+> Schraffuren werden, linksbündige Labels wurden zentriert). Behoben und seither
+> durch `npm run check:export` abgesichert. Wer hier etwas ändert, sollte den
+> Test danach laufen lassen.
+
 Sollten die BPMN-Shapes je auf ein ähnliches Shared-Primitive-Muster migriert werden,
 ist das als separates, größeres Vorhaben zu behandeln — rückwirkend wurde es nicht
 gemacht.
@@ -324,7 +333,8 @@ für Y/Z immer `e.key` verwenden.
 
 ## Verifikation ohne Testsuite
 
-Es gibt keinen Test-Runner im Projekt. Der etablierte Ansatz für isolierte Logik
+Es gibt keinen allgemeinen Test-Runner im Projekt — nur `npm run check:export`
+(Bildschirm gegen SVG-Export, alle Shape-Typen). Der etablierte Ansatz für isolierte Logik
 (Store-Actions, `pathRouting.ts`, `autoLayout.ts`, `attachmentGeometry.ts`,
 Serialisierer-/Export-Funktionen) ist ein Wegwerf-Skript per `npx tsx <script>.ts`, da
 diese DOM-unabhängig sind. UI-Verhalten lässt sich in dieser Umgebung nicht
