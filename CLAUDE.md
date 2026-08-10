@@ -34,24 +34,22 @@ Artefakt und Dokumentation — nicht das Quellprojekt.** Ein frischer Clone enth
 - `bpmn-editor-source/` — das eigentliche Vite/React/TypeScript-Quellprojekt. **Hier
   findet die gesamte echte Entwicklung statt** (`npm install` / `npm run dev` /
   `npm run build` von innerhalb dieses Verzeichnisses ausführen — siehe Build & Start
-  unten), aber es existiert nur auf dem Rechner des Maintainers und **ist nicht in
-  dieses Repository committet**. Fehlt es im Checkout, sind Änderungen auf
-  Quellcode-Ebene unmöglich — das explizit sagen, statt zu versuchen, das
-  Wurzel-`index.html` zu editieren; die Architektur-Abschnitte unten dienen dann als
-  Referenz, um Fragen zur App zu beantworten.
+  unten). **Seit 08/2026 im Repository committet** (ohne `node_modules`/`dist`, siehe
+  die projekteigene `.gitignore`). Beide Module sind registriert
+  (`registerBpmnModule()` **und** `registerWireframeModule()` in `App.tsx`),
+  `roughjs` ist als Abhängigkeit enthalten — dieser Stand passt zum ausgelieferten
+  `index.html`.
 
-  > **⚠️ Vorsicht bei nachgereichten Quellstand-Archiven.** Im 08/2026 wurde ein ZIP
-  > des Quellprojekts eingespielt und nach Prüfung wieder entfernt, weil es deutlich
-  > **älter war als das ausgelieferte `index.html`**: 32 statt 67 registrierter
-  > Shape-Typen, kein Modul `modules/wireframe/` (41 Typen, „Desktop-Wireframes";
-  > `App.tsx` rief nur `registerBpmnModule()` auf), kein `roughjs`, und ohne
-  > Menüleiste, Lineale/Hilfslinien, Stil-Panel, Sperren/Ausblenden, Spiegeln,
-  > Formatpinsel, Ausrichten-Menü, An-Fenster-anpassen, Druckseiten-Vorschau,
-  > Vorlagenverwaltung, Theme-Umschaltung sowie draw.io-, JSON- und PDF-Export.
-  > Ein Build daraus hätte die ausgelieferte App massiv zurückgeworfen.
-  > **Vor jedem Build aus einem nachgereichten Quellstand prüfen, ob er zum Artefakt
-  > passt** — schneller Test: Zahl der registrierten Shape-Typen und Vorhandensein
-  > von `src/modules/wireframe/`.
+  > **⚠️ Vorsicht bei nachgereichten Quellstand-Archiven.** Vor diesem Stand wurden
+  > zweimal ZIPs eingespielt, die deutlich **älter waren als das ausgelieferte
+  > `index.html`** (32 statt 67 Shape-Typen, kein `modules/wireframe/`, kein
+  > `roughjs`, ohne Menüleiste, Lineale, Stil-Panel, Sperren/Ausblenden, Spiegeln,
+  > Formatpinsel, An-Fenster-anpassen, Druckseiten-Vorschau, Vorlagenverwaltung,
+  > Theme-Umschaltung sowie draw.io-, JSON- und PDF-Export). Ein Build daraus hätte
+  > die App massiv zurückgeworfen.
+  > **Vor jedem Build aus einem nachgereichten Archiv prüfen, ob es zum Artefakt
+  > passt** — schneller Test: `ls src/modules` muss `bpmn` *und* `wireframe` zeigen,
+  > `grep rough package.json` muss anschlagen.
 - `BPMN-Editor-Technische-Dokumentation.md` — ein ausführliches technisches
   Übergabedokument (deutsch), das die Architektur im Detail beschreibt; ebenfalls nicht
   in dieses Repository committet (hier referenziert für den Fall, dass es lokal

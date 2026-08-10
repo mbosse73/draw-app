@@ -1,0 +1,1567 @@
+/* ============================================================
+   Design-System nach UI-DESIGNGUIDE.md: Dark-Glassmorphism als
+   Standard, umschaltbarer Flat-Light-Modus. Ein Umschalter, eine
+   Variable (--tint) - alle Farben leiten sich per rgba(var(--tint), X)
+   davon ab. Siehe Abschnitt 2 des Guides für die Herkunft dieser Werte;
+   1:1 übernommen, nicht neu erfunden.
+   ============================================================ */
+:root {
+  color-scheme: dark;
+  --tint: 255, 255, 255;
+
+  --glass-bg: rgba(var(--tint), 0.10);
+  --glass-bg-mid: rgba(var(--tint), 0.14);
+  --glass-bg-strong: rgba(var(--tint), 0.20);
+  --glass-border: rgba(var(--tint), 0.22);
+  --glass-border-soft: rgba(var(--tint), 0.12);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), 0 1.5px 4px rgba(0, 0, 0, 0.18);
+  --glass-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.20);
+  --glass-blur: blur(18px);
+  --glass-blur-sm: blur(10px);
+
+  --text: rgba(var(--tint), 0.95);
+  --text-2: rgba(var(--tint), 0.72);
+  --muted: rgba(var(--tint), 0.45);
+  --card: rgba(var(--tint), 0.10);
+  --border: rgba(var(--tint), 0.20);
+  --border-soft: rgba(var(--tint), 0.10);
+
+  --accent: #60a5fa;
+  --accent-light: rgba(96, 165, 250, 0.18);
+  --high: #f87171;
+  --high-light: rgba(248, 113, 113, 0.18);
+  --medium: #fbbf24;
+  --medium-light: rgba(251, 191, 36, 0.18);
+  --low: #34d399;
+  --low-light: rgba(52, 211, 153, 0.18);
+
+  --warn-bg: rgba(251, 191, 36, 0.15);
+  --warn-bg-strong: rgba(251, 191, 36, 0.25);
+  --warn-border: rgba(251, 191, 36, 0.40);
+  --warn-text: #fde68a;
+
+  --purple: #a78bfa;
+  --purple-light: rgba(167, 139, 250, 0.18);
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.50), 0 2px 8px rgba(0, 0, 0, 0.30);
+
+  /* Solide schwebende Flächen (Dialoge, Toasts) - eigene Tokens statt
+     --tint-Ableitung, damit sie auch im Hellmodus kräftig genug bleiben. */
+  --panel-bg: rgba(13, 26, 54, 0.86);
+  --panel-backdrop: rgba(6, 12, 26, 0.55);
+
+  --bg-gradient:
+    radial-gradient(ellipse 80% 60% at 10% 0%,   #1e3a5f 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 5%,   #0f2744 0%, transparent 55%),
+    radial-gradient(ellipse 50% 70% at 50% 100%, #0c1e3a 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 80% 60%,  #1a2f55 0%, transparent 50%),
+    linear-gradient(160deg, #0d1f3c 0%, #0a1628 40%, #0c2040 100%);
+
+  --font-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", Consolas, monospace;
+
+  /* App-spezifische Ergänzung (nicht Teil des Guides): die Zeichenfläche
+     selbst bleibt in BEIDEN Themes "Papier"-hell statt --tint zu folgen.
+     Grund: SVG/PNG-Export (imageExport.ts) rendert immer auf weißem
+     Hintergrund - ein volldunkles Arbeitsblatt würde vom exportierten
+     Ergebnis abweichen (WYSIWYG-Bruch). Bewusst nicht reinweiß, um den
+     Kontrastsprung zur dunklen Chrome-Oberfläche abzumildern. */
+  --canvas-bg: #eef1f6;
+  --canvas-grid-dot: rgba(29, 29, 31, 0.16);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --tint: 29, 29, 31;
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-mid: rgba(255, 255, 255, 0.74);
+  --glass-bg-strong: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(29, 29, 31, 0.10);
+  --glass-border-soft: rgba(29, 29, 31, 0.06);
+  --glass-shadow: 0 6px 20px rgba(29, 29, 31, 0.09), 0 1.5px 4px rgba(29, 29, 31, 0.05);
+  --glass-shadow-sm: 0 1px 3px rgba(29, 29, 31, 0.07), 0 1px 2px rgba(29, 29, 31, 0.04);
+  --radius: 14px;
+  --card: rgba(255, 255, 255, 0.8);
+  --border: rgba(29, 29, 31, 0.13);
+  --border-soft: rgba(29, 29, 31, 0.08);
+  --accent: #0071e3;
+  --accent-light: rgba(0, 113, 227, 0.10);
+  --high: #dc2626;
+  --high-light: rgba(220, 38, 38, 0.10);
+  --medium: #b45309;
+  --medium-light: rgba(180, 83, 9, 0.12);
+  --low: #059669;
+  --low-light: rgba(5, 150, 105, 0.10);
+  --warn-bg: rgba(180, 83, 9, 0.10);
+  --warn-bg-strong: rgba(180, 83, 9, 0.18);
+  --warn-border: rgba(180, 83, 9, 0.35);
+  --warn-text: #7a4a00;
+  --purple: #7c3aed;
+  --purple-light: rgba(124, 58, 237, 0.12);
+  --panel-bg: rgba(255, 255, 255, 0.92);
+  --panel-backdrop: rgba(29, 29, 31, 0.30);
+  --bg-gradient: linear-gradient(180deg, #f7f8fa 0%, #eef0f2 100%);
+
+  --canvas-bg: #fbfbfc;
+  --canvas-grid-dot: rgba(29, 29, 31, 0.14);
+}
+
+/* Feinkorrekturen Hellmodus: schwebende Flächen brauchen dort kräftigere
+   Schlagschatten, weil helle Flächen auf hellem Grund sonst nicht genug
+   Tiefe zeigen (siehe UI-DESIGNGUIDE.md Abschnitt 2). */
+:root[data-theme="light"] .toast,
+:root[data-theme="light"] dialog {
+  box-shadow: 0 14px 38px rgba(29, 29, 31, 0.16), 0 2px 6px rgba(29, 29, 31, 0.07);
+}
+:root[data-theme="light"] .btn:hover {
+  box-shadow: 0 6px 18px rgba(29, 29, 31, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  transition: background 0.25s ease;
+  overflow: hidden;
+}
+
+/* --- Toolbar (oben) --- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  padding: 10px 20px;
+  background: var(--glass-bg-mid);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  min-height: 52px;
+  flex-shrink: 0;
+  row-gap: 6px;
+  box-shadow: var(--glass-shadow-sm);
+  position: relative;
+  z-index: 30;
+}
+
+.toolbar-title {
+  font-weight: 700;
+  font-size: 14.5px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-right: 14px;
+  white-space: nowrap;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+.toolbar-spacer {
+  flex: 1 1 auto;
+  min-width: 8px;
+}
+
+.toolbar button {
+  padding: 7px 13px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-mid);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--glass-shadow-sm);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  transition: background-color 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.toolbar button:hover:not(:disabled) {
+  background: var(--glass-bg-strong);
+  border-color: rgba(var(--tint), 0.35);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+}
+
+.toolbar button:active:not(:disabled) {
+  background: var(--glass-bg-strong);
+}
+
+.toolbar button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.toolbar-toggle {
+  position: relative;
+}
+
+.toolbar-toggle--active {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.toolbar-toggle--active:hover {
+  background: var(--accent-light);
+  filter: brightness(1.1);
+}
+
+.toolbar-zoom {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  min-width: 48px;
+  text-align: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: text;
+  padding: 6px 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.toolbar-zoom:hover {
+  border-color: var(--border);
+  background: var(--glass-bg);
+}
+
+.toolbar-zoom-input {
+  width: 54px;
+  font-size: 13px;
+  text-align: center;
+  padding: 5px 2px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 3px var(--accent-light);
+  background: rgba(var(--tint), 0.10);
+  color: var(--text);
+}
+
+.theme-toggle-btn {
+  margin-left: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-mid);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--glass-shadow-sm);
+  white-space: nowrap;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--glass-bg-strong);
+}
+
+/* --- Body: 3-Spalten-Bereich ---
+   WICHTIG (Layout-Isolation): Toolbox/Properties haben feste Pixelbreiten
+   und flex-shrink:0, die Zeichenfläche ist der einzige flex:1-Teilnehmer.
+   `contain:layout` verhindert zusätzlich, dass ein Reflow innerhalb der
+   Zeichenfläche (z.B. durch SVG-Inhalt bei Zoom/Pan) jemals eine
+   Neuberechnung des Layouts der Geschwister-Panels auslöst - Zoom/Pan
+   verändern ohnehin nur eine <g transform>-Gruppe innerhalb des SVG, nie
+   dessen äußere Box, aber diese Regel macht die Trennung auch strukturell
+   unabhängig von der SVG-internen Umsetzung. */
+.app-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* --- Toolbox (links) --- */
+.toolbox {
+  width: 268px;
+  flex-shrink: 0;
+  flex-grow: 0;
+  contain: layout;
+  background: var(--glass-bg-mid);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--glass-border);
+  overflow-y: auto;
+  padding: 14px;
+  box-shadow: var(--glass-shadow-sm);
+}
+
+.toolbox-search {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.toolbox-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 30px 9px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--glass-bg-mid);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  box-shadow: var(--glass-shadow-sm);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+
+.toolbox-search input::placeholder {
+  color: var(--muted);
+}
+
+.toolbox-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--glass-bg-strong);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.toolbox-search-clear {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.toolbox-search-clear:hover {
+  color: var(--text);
+  background: rgba(var(--tint), 0.10);
+}
+
+.toolbox-no-results {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 8px 2px;
+}
+
+/* --- Zeichnungstyp-Ebene (oberste Hierarchie, z.B. "BPMN 2.0") --- */
+.toolbox-drawing-type {
+  margin-bottom: 4px;
+}
+
+.toolbox-drawing-type-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  transition: background-color 0.12s ease;
+}
+
+.toolbox-drawing-type-header:hover {
+  background: rgba(var(--tint), 0.08);
+}
+
+.toolbox-drawing-type-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.005em;
+}
+
+.toolbox-drawing-type-title--favorites {
+  color: var(--medium);
+}
+
+.toolbox-chevron {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.14s ease;
+  transform: rotate(0deg);
+  flex-shrink: 0;
+  width: 12px;
+  text-align: center;
+}
+
+.toolbox-chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+/* --- Kategorie-Ebene (zweite Hierarchie, z.B. "Ereignisse") --- */
+.toolbox-category {
+  margin-left: 6px;
+  margin-bottom: 2px;
+}
+
+.toolbox-category-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  transition: background-color 0.12s ease;
+}
+
+.toolbox-category-header:hover {
+  background: rgba(var(--tint), 0.08);
+}
+
+.toolbox-category-header span:last-child {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--purple);
+}
+
+.toolbox-items {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 4px 0 8px;
+  padding-left: 4px;
+}
+
+/* Wiederkehrendes Listeneintrag-Muster aus UI-DESIGNGUIDE.md Abschnitt 5
+   ("Listeneinträge mit Farbbalken"), hier auf Toolbox-Elemente angewendet. */
+.toolbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  padding: 7px 8px 7px 13px;
+  background: rgba(var(--tint), 0.07);
+  border: 1px solid rgba(var(--tint), 0.09);
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: grab;
+  user-select: none;
+  transition: background-color 0.1s ease, transform 0.08s ease;
+}
+
+.toolbox-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+}
+
+.toolbox-item svg {
+  flex-shrink: 0;
+}
+
+.toolbox-item span {
+  flex: 1;
+  /* Auf 2 Zeilen umbrechen statt mit "..." abzuschneiden - ein abgeschnittenes
+     Label ("Anwendungsfe...") ist weniger klar als ein vollständiges, zwei-
+     zeiliges. Ab einer (seltenen) 3. Zeile wird trotzdem sauber abgeschnitten,
+     damit einzelne überlange Labels die Kachel-Höhe nicht sprengen. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.3;
+}
+
+.toolbox-item:hover {
+  background: rgba(var(--tint), 0.13);
+  color: var(--text);
+}
+
+.toolbox-item:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+/* --- Favoriten-Stern --- */
+.toolbox-favorite-star {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 3px;
+  cursor: pointer;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.1s ease, color 0.1s ease, transform 0.1s ease;
+  border-radius: var(--radius-sm);
+}
+
+.toolbox-item:hover .toolbox-favorite-star {
+  opacity: 1;
+}
+
+.toolbox-favorite-star:hover {
+  transform: scale(1.15);
+  color: var(--medium);
+}
+
+.toolbox-favorite-star--active {
+  opacity: 1;
+  color: var(--medium);
+}
+
+/* --- Canvas (mitte) ---
+   Bleibt bewusst themeunabhängig hell, siehe Token-Kommentar oben.
+   touch-action/overscroll-behavior verhindern, dass ein Trackpad-Pinch
+   oder Ctrl+Mausrad zusätzlich zum eigenen Zoom (CanvasEngine.tsx) auch
+   noch die BROWSER-Seite selbst skaliert/verschiebt - das war der
+   gemeldete Fehler ("Menüzeile/Toolbox/Properties ändern sich mit"):
+   ohne diese Regeln kann der Browser ein natives Pinch-Zoom-Gesture auf
+   der gesamten Seite auslösen, das optisch wie ein Mitskalieren der
+   ganzen App aussieht, obwohl CanvasEngine.tsx nur die eigene <g>
+   transformiert. */
+.canvas-area {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+  contain: layout;
+  touch-action: none;
+  overscroll-behavior: none;
+  background: var(--canvas-bg);
+}
+
+/* --- Lineale (Z-17) - liegen über dem oberen/linken Zeichenflächenrand.
+   Solide Fläche (--panel-bg, nicht --glass-bg) aus demselben Grund wie beim
+   Kontextmenü weiter unten: sie überlappen den bewusst immer HELLEN Canvas-
+   Hintergrund, ein tint-basiertes Glas würde dort im Dunkelmodus hell statt
+   dunkel wirken (siehe Kontextmenü-Kommentar). */
+.ruler {
+  position: absolute;
+  background: var(--panel-bg);
+  z-index: 5;
+  user-select: none;
+}
+.ruler-horizontal {
+  top: 0;
+  right: 0;
+  cursor: ns-resize;
+}
+.ruler-vertical {
+  left: 0;
+  bottom: 0;
+  cursor: ew-resize;
+}
+.ruler-corner {
+  top: 0;
+  left: 0;
+  z-index: 6;
+}
+
+/* --- Properties Panel (rechts) --- */
+.properties-panel {
+  width: 272px;
+  flex-shrink: 0;
+  flex-grow: 0;
+  contain: layout;
+  background: var(--glass-bg-mid);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-left: 1px solid var(--glass-border);
+  padding: 18px;
+  overflow-y: auto;
+  box-shadow: var(--glass-shadow-sm);
+}
+
+.properties-panel h4 {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--purple);
+  border-bottom: 1.5px solid currentColor;
+  padding-bottom: 6px;
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.properties-panel h4:first-of-type {
+  margin-top: 0;
+}
+
+/* Zwei/drei Felder nebeneinander statt gestapelt (z.B. Breite+Höhe,
+   Füllfarbe+Linienfarbe) - auto-fit statt fester Spaltenzahl, damit sich die
+   Reihe automatisch an 2 oder 3 Kind-Felder anpasst, ohne dass die
+   aufrufende Stelle die Spaltenzahl selbst berechnen muss. */
+.properties-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.properties-row .properties-field {
+  margin-bottom: 0;
+}
+
+.properties-panel--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.properties-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+
+.properties-field input,
+.properties-field select,
+.properties-field textarea {
+  padding: 6px 9px;
+  border: 1px solid var(--glass-border);
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 400;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text);
+  background: rgba(var(--tint), 0.10);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.properties-field textarea {
+  resize: vertical;
+  min-height: 44px;
+  line-height: 1.4;
+}
+
+/* Kompakte Zeile für Farbfelder (Füllfarbe/Linienfarbe): Label und
+   Farb-Swatch nebeneinander statt gestapelt - die native Farbvorschau des
+   input[type=color] macht das Label-über-Swatch-Muster unnötig, das spart
+   pro Feld eine ganze Zeile Höhe. */
+.properties-field--color {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.properties-field--color input[type="color"] {
+  width: 36px;
+  height: 26px;
+  padding: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* Zeile mit zwei Aktionen nebeneinander (z.B. Schatten-Checkbox + "Stil
+   zurücksetzen"), damit ein Checkbox-Feld nicht die halbe Breite ungenutzt lässt. */
+.properties-inline-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.properties-inline-actions .properties-field--checkbox {
+  margin-bottom: 0;
+}
+
+.properties-reset-link {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 2px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.properties-reset-link:hover {
+  color: var(--text);
+}
+
+/* Live-Prozentwert neben einem Range-Slider (z.B. Transparenz). */
+.properties-field--range {
+  position: relative;
+}
+
+.properties-range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.properties-range-row input[type="range"] {
+  flex: 1;
+  padding: 0;
+  accent-color: var(--accent);
+  background: transparent;
+  border: none;
+}
+
+.properties-range-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.properties-field select option {
+  background: var(--panel-bg);
+  color: #fff;
+}
+
+:root[data-theme="light"] .properties-field select option {
+  color: var(--text);
+}
+
+.properties-field input:focus,
+.properties-field select:focus,
+.properties-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(var(--tint), 0.16);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.properties-field--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.properties-field--checkbox input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.properties-hint {
+  font-size: 11.5px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--muted);
+  margin: 4px 0 10px;
+  line-height: 1.5;
+}
+
+/* --- Toolbar: Divider & Dropdown-Menüs ---
+   Bewusst KEINE natives <dialog> (siehe HelpOverlay/ShortcutOverlay
+   weiter unten) - diese Dropdowns dürfen nicht modal blocken/den Fokus
+   fangen, während man z.B. weiter mit der Zeichenfläche interagiert. */
+.toolbar-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+.toolbar-menu {
+  position: relative;
+}
+
+/* Solide Fläche statt --tint-Glas (siehe UI-DESIGNGUIDE.md Abschnitt 2,
+   "solide schwebende Flächen... unabhängig vom Seitenhintergrund"): Diese
+   Dropdowns klappen unterhalb der Toolbar auf und überlappen dabei die
+   Zeichenfläche, die bewusst IMMER hell bleibt (siehe --canvas-bg weiter
+   oben). Mit tint-basiertem Glas + backdrop-filter würde die Fläche dort
+   die helle Zeichenfläche "durchscheinen" lassen und wäre mit hellem
+   --text (Weiß im Dunkelmodus) unlesbar - genau der gemeldete Fehler. */
+.toolbar-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--panel-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shadow);
+  min-width: 200px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  animation: menu-in 0.12s ease;
+  /* Sicherheitsnetz gegen abgeschnittene Einträge bei langen Dropdowns
+     (z.B. "Anordnen" in der Menüleiste, siehe MenuBar.tsx) auf kleinen
+     Fenstern - lieber scrollbar als unsichtbar. */
+  max-height: calc(100vh - 70px);
+  overflow-y: auto;
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.toolbar-menu-dropdown button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: none;
+  text-align: left;
+  padding: 8px 11px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-weight: 500;
+  font-size: 13px;
+  color: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Rechtsbündiger Tastaturkürzel-Hinweis in Menüeinträgen (siehe MenuBar.tsx
+   Shortcut-Komponente) - rein informativ, dezent gegenüber dem Label. */
+.menu-shortcut {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.toolbar-menu-dropdown button:disabled .menu-shortcut {
+  opacity: 0.5;
+}
+
+:root[data-theme="light"] .toolbar-menu-dropdown button {
+  color: var(--text);
+}
+
+.toolbar-menu-dropdown button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme="light"] .toolbar-menu-dropdown button:hover {
+  background: rgba(29, 29, 31, 0.08);
+}
+
+.toolbar-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 5px 3px;
+}
+
+.autosave-dropdown {
+  min-width: 270px;
+}
+
+/* --- Menüleiste (App-Header Zeile 1): Datei/Bearbeiten/Ansicht/Anordnen/
+   Hilfe, siehe MenuBar.tsx. Ersetzt die vormals ~25 flachen Buttons einer
+   einzigen Toolbar-Reihe durch eine vertraute, textbeschriftete Menüstruktur;
+   Zeile 2 (.quick-access-bar weiter unten) hält die häufigsten Aktionen
+   trotzdem permanent als Icons sichtbar. */
+.menubar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 16px;
+  background: var(--glass-bg-mid);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 32;
+}
+
+.menubar-title {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-right: 16px;
+  white-space: nowrap;
+}
+
+.menubar-item {
+  position: relative;
+}
+
+.menubar-trigger {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.menubar-trigger:hover {
+  background: var(--glass-bg-strong);
+}
+
+.menubar-trigger--active {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Höhere Spezifität (zwei Klassen) statt Regel-Reihenfolge, damit die
+   Positionierung unabhängig davon korrekt überschrieben wird, wo diese
+   Regel im Stylesheet relativ zu .toolbar-menu-dropdown steht. */
+.menubar-dropdown.toolbar-menu-dropdown {
+  left: 0;
+  right: auto;
+  min-width: 260px;
+}
+
+.menubar-spacer {
+  flex: 1 1 auto;
+}
+
+.menubar-row-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 11px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.menubar-full-row > button {
+  width: 100%;
+  text-align: left;
+}
+
+/* Verschachteltes Untermenü (Export/Auto-Save) innerhalb "Datei": klappt zur
+   Seite auf statt nach unten, wie ein natives Untermenü, damit es nicht mit
+   dem ohnehin schon geöffneten Datei-Dropdown kollidiert. ExportMenu.tsx/
+   AutosaveMenu.tsx selbst bleiben unverändert (eigenständige
+   Button+Dropdown-Komponenten) - hier wird nur ihre Positionierung/Optik an
+   den neuen Kontext angepasst. */
+.menu-flyout .toolbar-menu-dropdown {
+  top: -5px;
+  left: 100%;
+  right: auto;
+  margin-left: 6px;
+}
+
+/* Das "Datei"-Menü hostet die beiden Flyouts oben (Export/Auto-Save) und
+   darf deshalb NICHT das overflow-y:auto-Sicherheitsnetz von
+   .toolbar-menu-dropdown erben: Ein zur Seite ausklappendes Untermenü ist
+   ein absolut positioniertes Kind, dessen Containing Block (.toolbar-menu,
+   position: relative) innerhalb dieser Box liegt - overflow:auto würde es
+   also abschneiden, sodass nur noch die Scrollbalken der Datei-Box sichtbar
+   sind statt des Untermenü-Inhalts (siehe Fehlerbehebungen.md). Das
+   "Datei"-Menü selbst ist kurz genug, um ohne eigenes Scrollen auszukommen. */
+.menubar-dropdown--has-flyout.toolbar-menu-dropdown {
+  overflow: visible;
+}
+
+.menu-flyout .toolbar-menu > button {
+  width: 100%;
+  text-align: left;
+}
+
+/* --- Schnellzugriffsleiste (App-Header Zeile 2): häufige Aktionen als
+   Icons, siehe QuickAccessBar.tsx. Nutzt .toolbar für die Grund-Optik
+   (Pill-Buttons), .icon-btn verkleinert sie auf reine Symbol-Buttons. */
+.quick-access-bar {
+  min-height: 40px;
+  padding: 6px 16px;
+  z-index: 29;
+}
+
+.icon-btn {
+  min-width: 32px;
+  padding: 6px 10px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* --- Rechtsklick-Kontextmenü (Canvas) ---
+   Öffnet per Definition IMMER über der (bewusst immer hellen) Zeichenfläche
+   - deshalb wie die Toolbar-Dropdowns oben eine solide Fläche (--panel-bg)
+   statt --tint-Glas, sonst unlesbar (siehe Kommentar dort). */
+.context-menu {
+  position: fixed;
+  background: var(--panel-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shadow);
+  min-width: 200px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  animation: menu-in 0.12s ease;
+  /* Sicherheitsnetz für den (seltenen) Fall, dass das Menü selbst höher als
+     das Fenster ist - ContextMenu.tsx positioniert es zwar immer so, dass es
+     komplett sichtbar ist, kann es aber nicht kleiner als der Viewport machen. */
+  max-height: calc(100vh - 2 * 8px);
+  overflow-y: auto;
+}
+
+.context-menu-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.context-menu-section button {
+  border: none;
+  text-align: left;
+  padding: 8px 11px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-weight: 500;
+  font-size: 13px;
+  color: #fff;
+  cursor: pointer;
+}
+
+:root[data-theme="light"] .context-menu-section button {
+  color: var(--text);
+}
+
+.context-menu-section button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme="light"] .context-menu-section button:hover:not(:disabled) {
+  background: rgba(29, 29, 31, 0.08);
+}
+
+.context-menu-section button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 5px 3px;
+}
+
+/* --- Toasts (nicht-blockierendes Feedback statt alert()) --- */
+.toast-stack {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  background: var(--panel-bg);
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid var(--muted);
+  border-radius: 11px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  padding: 10px 14px;
+  min-width: 220px;
+  max-width: 380px;
+  font-size: 13.5px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transform: translateX(120%);
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s;
+}
+
+:root[data-theme="light"] .toast {
+  color: var(--text);
+}
+
+.toast--visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast--success {
+  border-left-color: var(--low);
+}
+
+.toast--error {
+  border-left-color: var(--high);
+}
+
+.toast--info {
+  border-left-color: var(--accent);
+}
+
+.toast-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.autosave-info {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 9px;
+  line-height: 1.5;
+}
+
+.autosave-info--warn {
+  color: var(--warn-text);
+}
+
+.autosave-backup-item {
+  font-size: 12px;
+}
+
+/* --- Restore-Banner (Autosave-Wiederherstellung) --- */
+.restore-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 20px;
+  background: var(--warn-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border-bottom: 1px solid var(--warn-border);
+  font-size: 13px;
+  color: var(--warn-text);
+}
+
+.restore-banner-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.restore-banner-actions button {
+  padding: 6px 12px;
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-strong);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.restore-banner-actions button:hover {
+  background: rgba(var(--tint), 0.14);
+}
+
+.restore-banner-discard {
+  color: var(--high);
+}
+
+/* --- Raster-Größe-Auswahl --- */
+.toolbar-grid-select {
+  padding: 7px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--glass-bg-mid);
+  cursor: pointer;
+}
+
+.toolbar-grid-select option {
+  background: var(--panel-bg);
+  color: #fff;
+}
+
+:root[data-theme="light"] .toolbar-grid-select option {
+  color: var(--text);
+}
+
+/* --- Dialoge (Hilfe, Tastenkürzel) ---
+   Natives <dialog> mit showModal(), siehe UI-DESIGNGUIDE.md Abschnitt 5 -
+   bewusst NUR für diese beiden echten Modal-Dialoge, nicht für die
+   leichten Toolbar-Dropdowns/das Kontextmenü (siehe Kommentar oben). */
+dialog.modal-panel {
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: var(--shadow-lg);
+  color: var(--text);
+  font-family: inherit;
+  width: 560px;
+  max-width: 90vw;
+  max-height: 80vh;
+  background: var(--panel-bg);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modal-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+dialog.modal-panel::backdrop {
+  background: var(--panel-backdrop);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+dialog.modal-panel--wide {
+  width: 760px;
+}
+
+dialog.modal-panel--shortcuts {
+  width: 900px;
+  max-height: 88vh;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.modal-close {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.modal-close:hover {
+  background: rgba(var(--tint), 0.12);
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 22px;
+  overflow-y: auto;
+  color: var(--text-2);
+}
+
+.shortcut-grid {
+  padding: 18px 24px 20px;
+}
+
+/* --- Tastenkürzel-Tabelle --- */
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 32px;
+  align-content: start;
+}
+
+.shortcut-group {
+  margin-bottom: 8px;
+  break-inside: avoid;
+}
+
+.shortcut-group--wide {
+  grid-column: 1 / -1;
+}
+
+.shortcut-group h4 {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--purple);
+  margin: 0 0 6px;
+}
+
+.shortcut-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.shortcut-table td {
+  padding: 4px 9px 4px 0;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-2);
+  line-height: 1.35;
+}
+
+.shortcut-keys {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(var(--tint), 0.10);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  width: 1%;
+  padding-left: 7px !important;
+  padding-right: 7px !important;
+}
+
+/* --- Bibliothek (durchsuchbare gespeicherte Zeichnungen) --- */
+.library-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.library-current h4,
+.library-browse h4 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--purple);
+}
+
+.library-browse {
+  margin-top: 16px;
+}
+
+.library-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+.library-search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.library-search {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-mid);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.library-empty {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 12px 2px;
+}
+
+.library-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.library-entry {
+  padding: 9px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.library-entry:hover {
+  background: rgba(var(--tint), 0.10);
+  border-color: var(--accent);
+}
+
+.library-entry-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.library-entry-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.library-entry-date {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.library-entry-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.library-entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.library-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--tint), 0.12);
+  color: var(--text-2);
+}
+
+/* --- Hilfe-Overlay Layout --- */
+.help-layout {
+  display: flex;
+  overflow: hidden;
+  flex: 1;
+}
+
+.help-nav {
+  width: 190px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--glass-border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  background: rgba(var(--tint), 0.04);
+}
+
+.help-nav-item {
+  text-align: left;
+  padding: 9px 11px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.help-nav-item:hover {
+  background: rgba(var(--tint), 0.10);
+  color: var(--text);
+}
+
+.help-nav-item--active {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.help-content {
+  padding: 22px;
+  overflow-y: auto;
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+.help-content h4 {
+  margin-top: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.help-content p {
+  margin: 0 0 12px;
+}
