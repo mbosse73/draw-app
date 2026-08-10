@@ -3,7 +3,7 @@ import { diagramToJson } from "../../core/io/diagramSerializer";
 import { useFavoritesStore } from "../Toolbox/favoritesStore";
 import { downloadTextFile, downloadBlob } from "../../core/io/fileIo";
 import { buildExportSvg, exportDiagramAsPng } from "../../core/io/imageExport";
-import { buildBpmnXml } from "../../modules/bpmn/io/bpmnXmlExport";
+import { buildBpmnXml, summarizeBpmnCoverage } from "../../modules/bpmn/io/bpmnXmlExport";
 import { buildDrawioXml } from "../../modules/bpmn/io/drawioExport";
 import { showToast } from "../Toast/toastStore";
 
@@ -32,10 +32,29 @@ export function ExportMenu() {
     showToast("Als JSON exportiert", "success");
   };
 
+  // F-10: BPMN-XML kann nur BPMN-Elemente aufnehmen. Enthaelt das Diagramm
+  // keine, waere die Datei leer - dann gar nicht erst herunterladen, sondern
+  // erklaeren warum. Sind nur einzelne Elemente nicht abbildbar (gemischtes
+  // Diagramm), wird exportiert, aber die Zahl der uebergangenen Elemente
+  // genannt, damit niemand von einem stillen Verlust ueberrascht wird.
   const handleExportBpmnXml = () => {
+    const { abbildbar, uebergangen } = summarizeBpmnCoverage();
+    if (abbildbar === 0) {
+      setOpen(false);
+      showToast(
+        "Dieses Diagramm enthält keine BPMN-Elemente - eine BPMN-Datei wäre leer. Für Wireframes eignen sich SVG, PNG oder JSON.",
+        "error"
+      );
+      return;
+    }
     downloadTextFile(buildBpmnXml(), timestampedName("diagramm", "bpmn"), "application/xml");
     setOpen(false);
-    showToast("Als BPMN 2.0 XML exportiert", "success");
+    showToast(
+      uebergangen > 0
+        ? `Als BPMN 2.0 XML exportiert - ${uebergangen} Element(e) ohne BPMN-Entsprechung wurden übergangen`
+        : "Als BPMN 2.0 XML exportiert",
+      uebergangen > 0 ? "info" : "success"
+    );
   };
 
   const handleExportDrawio = () => {

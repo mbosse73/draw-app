@@ -7,6 +7,8 @@ import { registerDataDisplayShapes } from "./shapes/DataDisplayShapes";
 import { registerTextShapes } from "./shapes/TextShapes";
 import { registerMarkupShapes } from "./shapes/MarkupShapes";
 import { registerWireframeConnectorTypes } from "./connectors/WireframeConnectorTypes";
+import { ShapeRegistry } from "../../core/shapes/ShapeRegistry";
+import { renderWireframeShapeToStaticSvg } from "./io/staticSvg";
 
 /**
  * Registriert das komplette Desktop-Wireframe-Modul bei der Core-Engine.
@@ -24,4 +26,7 @@ export function registerWireframeModule() {
   registerTextShapes();
   registerMarkupShapes();
   registerWireframeConnectorTypes();
+  // Siehe modules/bpmn/index.ts: Der Bild-Export holt sich die Darstellung
+  // beim zuständigen Modul ab.
+  ShapeRegistry.setStaticSvgRenderer("Desktop-Wireframes", renderWireframeShapeToStaticSvg);
 }

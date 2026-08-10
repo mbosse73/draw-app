@@ -1,5 +1,8 @@
 import rough from "roughjs";
 import type { Options as RoughOptions } from "roughjs/bin/core";
+import type { ShapeInstance } from "../../../core/shapes/types";
+import { resolveFill, resolveStroke, resolveStrokeWidth } from "../../../core/shapes/shapeStyle";
+import { WIREFRAME_COLORS } from "./constants";
 
 /**
  * Gemeinsame Skizzen-Engine für das gesamte Wireframe-Modul. Löst das in der
@@ -29,6 +32,18 @@ export interface SketchPath {
   fill?: string;
   stroke: string;
   strokeWidth: number;
+  /**
+   * Wofür dieser Pfad steht - von `drawableToPaths` gesetzt, sonst nirgends.
+   *
+   * Rough.js liefert für eine gefüllte Form ZWEI Pfade, und wo die Füllfarbe
+   * steckt, hängt vom Füllstil ab: bei der voreingestellten Schraffur zeichnet
+   * es Füll-LINIEN, deren Farbe im `stroke` liegt (`fill` ist dort der String
+   * "none"); bei `fillStyle: "solid"` liegt sie im `fill`. Ohne diese
+   * Unterscheidung lässt sich eine benutzerdefinierte Füllfarbe (Stil-Panel,
+   * Z-15) nicht korrekt anwenden - ein blindes Überschreiben von `fill` machte
+   * aus den Schraffurlinien eine gefüllte Zickzackfläche.
+   */
+  role: "fill" | "outline";
 }
 
 const DEFAULT_OPTIONS: RoughOptions = {
@@ -39,11 +54,19 @@ const DEFAULT_OPTIONS: RoughOptions = {
 };
 
 function drawableToPaths(drawable: ReturnType<typeof generator.rectangle>): SketchPath[] {
-  return generator.toPaths(drawable).map((p) => ({
+  const hatFuellung = Boolean(drawable.options?.fill);
+  const pfade = generator.toPaths(drawable);
+  return pfade.map((p, i) => ({
     d: p.d,
     fill: p.fill,
     stroke: p.stroke,
     strokeWidth: p.strokeWidth,
+    // Rough.js gibt die Füllung (solide Fläche ODER Schraffurlinien) IMMER vor
+    // der Kontur aus; die Kontur ist der letzte Pfad. Das ist verlässlicher als
+    // ein Farbvergleich (Füll- und Linienfarbe dürfen gleich sein) und als die
+    // Strichstärke (die Schraffurbreite leitet Rough.js aus der Konturbreite
+    // ab, sie ist nicht zwingend kleiner als 1). Siehe SketchPath.role.
+    role: (hatFuellung && i < pfade.length - 1 ? "fill" : "outline") as SketchPath["role"],
   }));
 }
 
@@ -111,9 +134,52 @@ export function sketchSparkle(cx: number, cy: number, r: number, seed: number, o
   return drawableToPaths(generator.path(d, { seed, ...DEFAULT_OPTIONS, ...options }));
 }
 
-/** Für den String-Export (imageExport.ts) - dieselben SketchPath-Daten wie SketchPaths (JSX). */
-export function sketchPathsToSvgString(paths: SketchPath[]): string {
+/**
+ * Wendet die Stil-Panel-Overrides (Z-15) auf fertige Skizzen-Pfade an - der
+ * gemeinsame Nenner von `<SketchPaths>` (Bildschirm) und
+ * `sketchPathsToSvgString()` (Export), damit beide garantiert dasselbe tun.
+ *
+ * Warum zentral statt an jeder Zeichenstelle: Die 42 Wireframe-Typen erzeugen
+ * zusammen 87 Skizzen-Aufrufe mit fest gewählten Farben ("Titelleiste grau",
+ * "Schalter-Knauf weiß"). Diese pro Aufruf aufzulösen wäre 87-fache
+ * Handarbeit in zwei Dateien - genau die Doppelpflege, die im Export schon
+ * einmal auseinandergelaufen ist.
+ *
+ * Zwei bewusste Auslassungen:
+ * - Ein Pfad, der bereits in der Auswahlfarbe gezeichnet ist, bleibt
+ *   unangetastet. Sonst würde eine eigene Linienfarbe die Auswahl-
+ *   Hervorhebung überschreiben und markierte Elemente sähen unmarkiert aus.
+ * - `lineStyle` (gestrichelt/gepunktet) wird nicht angewendet: Rough.js
+ *   zeichnet jede Linie als mehrere überlagerte Striche, ein zusätzliches
+ *   Strichmuster darauf ergibt optisches Rauschen statt einer Strichlinie.
+ */
+export function applySketchStyleOverride(shape: ShapeInstance | undefined): (p: SketchPath) => SketchPath {
+  if (!shape?.style) return (p) => p;
+  return (p) => {
+    if (p.stroke === WIREFRAME_COLORS.strokeSelected) return p;
+    if (p.role === "fill") {
+      // Je nach Füllstil steckt die Farbe im fill (solid) oder im stroke
+      // (Schraffur) - siehe SketchPath.role. Die Strichstärke der Schraffur
+      // bleibt unangetastet: Sie ist Teil des Skizzen-Looks, keine Kontur.
+      return {
+        ...p,
+        fill: p.fill && p.fill !== "none" ? resolveFill(shape, p.fill) : p.fill,
+        stroke: p.stroke && p.stroke !== "none" ? resolveFill(shape, p.stroke) : p.stroke,
+      };
+    }
+    return {
+      ...p,
+      stroke: resolveStroke(shape, p.stroke),
+      strokeWidth: resolveStrokeWidth(shape, p.strokeWidth),
+    };
+  };
+}
+
+/** Für den String-Export (modules/wireframe/io/staticSvg.ts) - dieselben
+ *  SketchPath-Daten und dieselben Stil-Overrides wie SketchPaths (JSX). */
+export function sketchPathsToSvgString(paths: SketchPath[], shape?: ShapeInstance): string {
   return paths
+    .map(applySketchStyleOverride(shape))
     .map(
       (p) =>
         `<path d="${p.d}" fill="${p.fill ?? "none"}" stroke="${p.stroke}" stroke-width="${p.strokeWidth}" />`

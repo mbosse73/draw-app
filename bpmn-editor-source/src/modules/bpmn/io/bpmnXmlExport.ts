@@ -101,6 +101,25 @@ function safeId(id: string): string {
 }
 
 /**
+ * Zaehlt, wie viele Elemente des Diagramms im BPMN-XML ueberhaupt abbildbar
+ * sind. Grundlage fuer die Rueckmeldung vor dem Export (F-10): Ein Diagramm
+ * ganz ohne BPMN-Elemente - etwa ein reines Wireframe - ergibt eine
+ * syntaktisch gueltige, aber inhaltsleere Prozessdatei. Das ohne Hinweis
+ * herunterzuladen sieht wie ein Erfolg aus und ist keiner.
+ *
+ * Bewusst hier im BPMN-Modul (nicht in der UI): welcher Shape-Typ in BPMN-XML
+ * abbildbar ist, weiss allein `bpmnTagFor` - Pools, Lanes und Text-
+ * Annotationen liefern dort zwar `null`, landen aber trotzdem im Export und
+ * muessen deshalb gesondert mitgezaehlt werden.
+ */
+export function summarizeBpmnCoverage(): { abbildbar: number; uebergangen: number } {
+  const shapes = Object.values(useCanvasStore.getState().shapes);
+  const zusaetzlich = new Set(["bpmn.pool", "bpmn.lane", "text.label"]);
+  const abbildbar = shapes.filter((s) => bpmnTagFor(s) !== null || zusaetzlich.has(s.type)).length;
+  return { abbildbar, uebergangen: shapes.length - abbildbar };
+}
+
+/**
  * Ermittelt die für die XML-Verschachtelung relevante "Eltern"-ID einer Shape:
  * normalerweise deren parentId, aber bei angehefteten Shapes (z.B. Boundary
  * Events, die selbst nie ein parentId bekommen - siehe canvasStore.ts) die

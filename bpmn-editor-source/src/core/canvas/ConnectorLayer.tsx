@@ -21,7 +21,6 @@ interface ConnectorLayerProps {
   onSelectConnector: (id: string) => void;
   onDoubleClickConnector: (id: string) => void;
   onContextMenuConnector: (connectorId: string, e: React.MouseEvent) => void;
-  onEndpointMouseDown: (connectorId: string, end: "source" | "target", e: React.MouseEvent) => void;
   onAddWaypoint: (connectorId: string, index: number, point: { x: number; y: number }) => void;
   /** Fügt sofort (ohne Drag) einen Wegpunkt ein - Doppelklick auf ein
    *  Verbinder-Segment (Z-10). */
@@ -146,7 +145,6 @@ export function ConnectorLayer({
   onSelectConnector,
   onDoubleClickConnector,
   onContextMenuConnector,
-  onEndpointMouseDown,
   onAddWaypoint,
   onQuickInsertWaypoint,
   onWaypointMouseDown,
@@ -314,17 +312,12 @@ export function ConnectorLayer({
 
             {isSelected && !isReconnecting && (
               <>
-                {/* Endpunkt-Griffe zum Lösen & Neuandocken */}
-                <circle
-                  cx={from.x} cy={from.y} r={6} fill="#ffffff" stroke="var(--accent, #3d5a99)" strokeWidth={2}
-                  style={{ cursor: "crosshair" }}
-                  onMouseDown={(e) => { e.stopPropagation(); onEndpointMouseDown(connector.id, "source", e); }}
-                />
-                <circle
-                  cx={to.x} cy={to.y} r={6} fill="#ffffff" stroke="var(--accent, #3d5a99)" strokeWidth={2}
-                  style={{ cursor: "crosshair" }}
-                  onMouseDown={(e) => { e.stopPropagation(); onEndpointMouseDown(connector.id, "target", e); }}
-                />
+                {/* Die Endpunkt-Griffe werden bewusst NICHT hier gezeichnet,
+                    sondern von CanvasEngine.tsx als eigene Ebene ÜBER den
+                    Shapes (siehe ConnectorEndpointHandles unten): Ein Endpunkt
+                    sitzt per Definition auf dem Rand seines Shapes und wäre
+                    hier - die Verbindungsebene liegt unter den Shapes - von
+                    dessen Trefferfläche und dessen Ports verdeckt. */}
 
                 {/* Wegpunkt-Griffe: bestehende manuelle Wegpunkte verschiebbar,
                     per Doppelklick entfernbar (kehrt dann zu Auto-Routing zurück
@@ -408,6 +401,51 @@ export function ConnectorLayer({
           />
         );
       })()}
+    </g>
+  );
+}
+
+/**
+ * Die beiden Endpunkt-Griffe der ausgewählten Verbindung (Lösen & Neuandocken).
+ *
+ * Eigene Komponente, weil sie ÜBER den Shapes liegen muss: Ein Endpunkt sitzt
+ * immer genau auf dem Rand seines Shapes, und die Verbindungsebene wird
+ * absichtlich unter den Shapes gezeichnet (Linien sollen nicht über Formen
+ * laufen). Innerhalb der Ebene gezeichnet war der Griff deshalb nie
+ * anklickbar - die Trefferfläche des Shapes bzw. dessen Port lag darüber, und
+ * ein Zug am sichtbaren Griff verschob das Shape oder begann eine neue
+ * Verbindung. Gleiches Muster wie F-11 bei den Ports.
+ *
+ * Die Positionen kommen aus derselben `getConnectorEndpoints`-Funktion wie im
+ * Rest der Ebene - keine zweite Berechnung, nur eine zweite Zeichenebene. Das
+ * Routing (A*) wird hier bewusst nicht angefasst; für die Griffe zählen nur
+ * Anfangs- und Endpunkt.
+ */
+export function ConnectorEndpointHandles({
+  connector,
+  shapes,
+  onEndpointMouseDown,
+}: {
+  connector: ConnectorInstance;
+  shapes: Record<string, ShapeInstance>;
+  onEndpointMouseDown: (connectorId: string, end: "source" | "target", e: React.MouseEvent) => void;
+}) {
+  const endpoints = getConnectorEndpoints(connector, shapes);
+  if (!endpoints) return null;
+  const { from, to } = endpoints;
+  return (
+    <g className="connector-endpoints">
+      {([
+        ["source", from],
+        ["target", to],
+      ] as const).map(([end, punkt]) => (
+        <g key={end} style={{ cursor: "crosshair" }} onMouseDown={(e) => { e.stopPropagation(); onEndpointMouseDown(connector.id, end, e); }}>
+          {/* Trefferfläche wie bei den Ports (ShapePorts.tsx) etwas größer als
+              der sichtbare Griff. */}
+          <circle cx={punkt.x} cy={punkt.y} r={9} fill="transparent" />
+          <circle cx={punkt.x} cy={punkt.y} r={6} fill="#ffffff" stroke="var(--accent, #3d5a99)" strokeWidth={2} />
+        </g>
+      ))}
     </g>
   );
 }

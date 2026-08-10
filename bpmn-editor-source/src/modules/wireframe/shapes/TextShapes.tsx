@@ -27,7 +27,7 @@ function ParagraphRender({ shape }: ShapeRenderProps) {
       {Array.from({ length: lineCount }).map((_, i) => {
         const isLast = i === lineCount - 1;
         const lineW = isLast ? w * 0.55 : w;
-        return <SketchPaths key={i} paths={sketchLine(0, i * 16, lineW, i * 16, seedFor(shape.id, `l${i}`), { stroke: WIREFRAME_COLORS.accentFill, strokeWidth: 2.4 })} />;
+        return <SketchPaths shape={shape} key={i} paths={sketchLine(0, i * 16, lineW, i * 16, seedFor(shape.id, `l${i}`), { stroke: WIREFRAME_COLORS.accentFill, strokeWidth: 2.4 })} />;
       })}
     </g>
   );
@@ -49,7 +49,7 @@ function LinkRender({ shape }: ShapeRenderProps) {
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
       <MultilineText text={label} x={w / 2} y={h / 2 + 2} fontSize={12.5} fill={WIREFRAME_COLORS.text} />
-      <SketchPaths paths={sketchLine(w * 0.15, h / 2 + 8, w * 0.85, h / 2 + 8, seedFor(shape.id, "underline"), { stroke: WIREFRAME_COLORS.stroke, strokeWidth: 1 })} />
+      <SketchPaths shape={shape} paths={sketchLine(w * 0.15, h / 2 + 8, w * 0.85, h / 2 + 8, seedFor(shape.id, "underline"), { stroke: WIREFRAME_COLORS.stroke, strokeWidth: 1 })} />
     </g>
   );
 }

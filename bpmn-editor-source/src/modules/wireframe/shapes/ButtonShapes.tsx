@@ -11,7 +11,7 @@ function ButtonRender({ shape, isSelected }: ShapeRenderProps) {
   const label = (shape.data.label as string) ?? "Button";
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, strokeWidth: 2, fill: WIREFRAME_COLORS.fillLight })} />
+      <SketchPaths shape={shape} paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, strokeWidth: 2, fill: WIREFRAME_COLORS.fillLight })} />
       <MultilineText text={label} x={w / 2} y={h / 2 + 4} fontSize={12.5} fill={WIREFRAME_COLORS.text} />
     </g>
   );
@@ -25,8 +25,8 @@ function IconButtonRender({ shape, isSelected }: ShapeRenderProps) {
   const { width: w, height: h } = shape.size;
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
-      <SketchPaths paths={sketchSparkle(w / 2, h / 2, Math.min(w, h) * 0.32, seedFor(shape.id, "glyph"), { stroke, fill: WIREFRAME_COLORS.fillLight, fillStyle: "solid" })} />
+      <SketchPaths shape={shape} paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchSparkle(w / 2, h / 2, Math.min(w, h) * 0.32, seedFor(shape.id, "glyph"), { stroke, fill: WIREFRAME_COLORS.fillLight, fillStyle: "solid" })} />
     </g>
   );
 }
@@ -38,8 +38,8 @@ function ToggleSwitchRender({ shape, isSelected }: ShapeRenderProps) {
   const handleX = on ? w - h / 2 : h / 2;
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: on ? WIREFRAME_COLORS.fillLight : "#ffffff" }, h / 2)} />
-      <SketchPaths paths={sketchCircle(handleX, h / 2, h * 0.7, seedFor(shape.id, "handle"), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: on ? WIREFRAME_COLORS.fillLight : "#ffffff" }, h / 2)} />
+      <SketchPaths shape={shape} paths={sketchCircle(handleX, h / 2, h * 0.7, seedFor(shape.id, "handle"), { stroke, fill: "#ffffff" })} />
     </g>
   );
 }
@@ -51,10 +51,10 @@ function SegmentedControlRender({ shape, isSelected }: ShapeRenderProps) {
   const segW = w / items.length;
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
       {items.map((item, i) => (
         <g key={i}>
-          {i > 0 && <SketchPaths paths={sketchLine(segW * i, 0, segW * i, h, seedFor(shape.id, `sep${i}`), { stroke, strokeWidth: 1.2 })} />}
+          {i > 0 && <SketchPaths shape={shape} paths={sketchLine(segW * i, 0, segW * i, h, seedFor(shape.id, `sep${i}`), { stroke, strokeWidth: 1.2 })} />}
           <MultilineText text={item} x={segW * i + segW / 2} y={h / 2 + 4} fontSize={11.5} fill={WIREFRAME_COLORS.text} />
         </g>
       ))}

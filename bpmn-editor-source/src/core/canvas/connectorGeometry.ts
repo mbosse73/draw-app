@@ -97,6 +97,57 @@ export function findFreePortOnShapeBorder(
   return closest ? { shapeId: closest.shapeId, portId: closest.portId } : null;
 }
 
+/**
+ * Letzte Stufe der Ziel-Auflösung beim Loslassen einer Verbindung (F-11):
+ * Wird die Maus MITTEN auf einer Shape losgelassen - also weder nahe genug an
+ * einem festen Port noch nahe genug an deren Rand -, ist die gemeinte Absicht
+ * trotzdem eindeutig "verbinde mit dieser Shape". Vorher scheiterte der
+ * Verbindungsversuch dort stillschweigend (bei einem Hover-Pfeil entstand
+ * sogar eine neue Shape genau über der bereits vorhandenen).
+ *
+ * Angedockt wird am festen Port, der dem Ausgangspunkt am nächsten liegt -
+ * so betritt die Verbindung die Shape von der Seite, aus der sie kommt,
+ * statt an einer willkürlichen Kante zu landen.
+ */
+export function findPortOnShapeAtPoint(
+  shapes: Record<string, ShapeInstance>,
+  point: Point,
+  fromPoint: Point
+): { shapeId: string; portId: string } | null {
+  let treffer: { shape: ShapeInstance; flaeche: number } | null = null;
+  for (const shape of Object.values(shapes)) {
+    if (shape.hidden || shape.locked) continue;
+    const definition = ShapeRegistry.get(shape.type);
+    // Container (Pools/Lanes) bewusst übersprungen: sie liegen unter ihren
+    // Kindern, ein Loslassen "auf" ihnen meint fast immer das Kind-Element.
+    if (!definition || definition.isContainer) continue;
+    const { x, y } = shape.position;
+    const { width, height } = shape.size;
+    if (point.x < x || point.x > x + width || point.y < y || point.y > y + height) continue;
+    const flaeche = width * height;
+    // Bei Überlappung gewinnt die kleinere Shape - das ist die, die der
+    // Nutzer sieht (größere liegen als Hintergrund darunter).
+    if (!treffer || flaeche < treffer.flaeche) treffer = { shape, flaeche };
+  }
+  if (!treffer) return null;
+
+  const ports = getAllPortPositions(treffer.shape);
+  if (ports.length === 0) {
+    const { relativePosition } = projectPointOntoShapeBorder(treffer.shape, fromPoint);
+    return { shapeId: treffer.shape.id, portId: freePortId(relativePosition) };
+  }
+  let bester = ports[0];
+  let besteDistanz = Infinity;
+  for (const p of ports) {
+    const d = Math.hypot(p.position.x - fromPoint.x, p.position.y - fromPoint.y);
+    if (d < besteDistanz) {
+      besteDistanz = d;
+      bester = p;
+    }
+  }
+  return { shapeId: treffer.shape.id, portId: bester.portId };
+}
+
 /** Liefert alle Ports einer Shape mit ihren absoluten Weltpositionen. */
 export function getAllPortPositions(shape: ShapeInstance): Array<{ portId: string; position: Point }> {
   const definition = ShapeRegistry.get(shape.type);

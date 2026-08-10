@@ -146,24 +146,35 @@ bewusst durchgesetzt — Container-/Anheft-Logik blieb generisch in
 ```
 src/
 ├── App.tsx / App.css / main.tsx     App-Wurzel, Modul-Registrierung, einziges Stylesheet
-├── core/                            Generische Engine — KEIN BPMN-Wissen erlaubt
-│   ├── shapes/                      types.ts, ShapeRegistry.ts, ConnectorTypeRegistry.ts
-│   ├── state/                       canvasStore.ts (zentraler Zustand-Store, ~495 Zeilen),
+├── core/                            Generische Engine — KEIN Modul-Wissen erlaubt
+│   ├── shapes/                      types.ts, ShapeRegistry.ts (inkl. setStaticSvgRenderer),
+│   │                                 ConnectorTypeRegistry.ts, shapeStyle.ts (Stil-Auflösung)
+│   ├── state/                       canvasStore.ts (zentraler Zustand-Store),
 │   │                                 history.ts (Undo/Redo), useHistoryStatus.ts, clipboard.ts
-│   ├── canvas/                      CanvasEngine.tsx (~990 Zeilen, DIE zentrale Datei — s.u.),
-│   │                                 ConnectorLayer.tsx, ShapePorts.tsx, ResizeHandle.tsx,
+│   ├── canvas/                      CanvasEngine.tsx (~2100 Zeilen, DIE zentrale Datei — s.u.),
+│   │                                 ConnectorLayer.tsx (+ ConnectorEndpointHandles),
+│   │                                 ShapePorts.tsx, HoverArrows.tsx, ResizeHandle.tsx,
 │   │                                 GridLayer.tsx, AlignmentGuidesLayer.tsx, MultilineText.tsx,
 │   │                                 connectorGeometry.ts, connectorPath.ts, pathRouting.ts (A*),
 │   │                                 containment.ts, attachmentGeometry.ts, alignmentGuides.ts,
 │   │                                 autoLayout.ts
-│   └── io/                          diagramSerializer.ts, fileIo.ts, imageExport.ts, autosave.ts,
-│                                     useAutosave.ts, fileSystemBackup.ts
-├── modules/bpmn/                    Das (einzige) Diagramm-Modul
+│   └── io/                          diagramSerializer.ts, fileIo.ts, autosave.ts,
+│                                     useAutosave.ts, fileSystemBackup.ts,
+│                                     imageExport.ts (Rahmen/Verbinder — KEINE Shape-Optik),
+│                                     staticSvgPrimitives.ts (escapeXml, multilineTextMarkup)
+├── modules/bpmn/                    Diagramm-Modul „BPMN 2.0"
 │   ├── index.ts                     registerBpmnModule() — einziger Kontaktpunkt zum Core
 │   ├── shapes/                      EventShapes, TaskShapes, GatewayShapes, DataObjectShape,
 │   │                                 PoolLaneShapes, SubProcessShape, BoundaryEventShape, TextShape
 │   ├── connectors/                  BpmnConnectorTypes.ts
-│   └── io/                          bpmnXmlExport.ts (BPMN-2.0-XML-Serialisierung)
+│   └── io/                          bpmnXmlExport.ts (BPMN-2.0-XML-Serialisierung),
+│                                     drawioExport.ts, staticSvg.ts (Shape-Optik für den Bild-Export)
+├── modules/wireframe/               Diagramm-Modul „Desktop-Wireframes"
+│   ├── index.ts                     registerWireframeModule()
+│   ├── shapes/                      sketch.ts (Rough.js-Primitive + Stil-Overrides), SketchPaths.tsx,
+│   │                                 Window/Container/Menu/Input/Button/DataDisplay/Text/Markup-Shapes
+│   ├── connectors/                  WireframeConnectorTypes.ts
+│   └── io/                          staticSvg.ts (Shape-Optik für den Bild-Export)
 └── ui/                               Präsentationsschicht; darf Core und Module importieren
     ├── Toolbox/, Toolbar/, PropertiesPanel/, Autosave/, Help/
 ```
@@ -232,45 +243,88 @@ History bewusst **nicht** erfasst.
 ### Export-Renderer sind unabhängige Re-Implementierungen — das größte Wartungsrisiko
 
 `imageExport.ts` (SVG/PNG-Export) und `ToolboxIcon.tsx` (Toolbox-Vorschau)
-**re-implementieren** jeweils das visuelle Rendering jedes Shape-Typs von Grund auf,
-unabhängig von den echten React-Komponenten in `modules/bpmn/shapes/*.tsx`. Die
+**re-implementieren** das visuelle Rendering jedes Shape-Typs von Grund auf,
+unabhängig von den echten React-Komponenten in `modules/*/shapes/*.tsx`. Die
 Wiederverwendung der echten Komponenten über `renderToStaticMarkup()` aus
 `react-dom/server` wurde versucht und verworfen — sie brach in der Node-basierten
 Verifikationsumgebung (`npx tsx`, kein Browser-DOM) und ließ sich im Browser nicht
 risikofrei absichern.
 
-**Konsequenz: Jeder neue Shape-Typ braucht manuelle drei- (oder vier-)fache Pflege:**
+**Seit 08/2026 liegt der Export-Renderer aber nicht mehr im Core.** `core/` darf
+kein Modul kennen; `imageExport.ts` importierte trotzdem `sketch.ts` aus
+`modules/wireframe/` und hatte sämtliche BPMN-Formen fest verdrahtet. Jetzt gilt:
+
+- `core/io/imageExport.ts` kennt nur noch Rahmen, Verbinder, Stil-Hülle
+  (Deckkraft/Schatten/Rotation) und einen generischen Rechteck-Notnagel.
+- Die Darstellung der Shapes liefert das jeweilige Modul:
+  `modules/bpmn/io/staticSvg.ts` und `modules/wireframe/io/staticSvg.ts`,
+  registriert in der jeweiligen `index.ts` über
+  `ShapeRegistry.setStaticSvgRenderer(drawingType, fn)`. Der Schlüssel ist der
+  `drawingType` — derselbe undurchsichtige String, den die Toolbox zur
+  Gruppierung nutzt und den der Core nie interpretiert.
+- Gemeinsame, modulfreie Bausteine (`escapeXml`, `multilineTextMarkup`) liegen in
+  `core/io/staticSvgPrimitives.ts`.
+
+Ein neues Modul dockt seinen Export damit ohne jede Core-Änderung an.
+
+**Konsequenz: Jeder neue Shape-Typ braucht weiterhin manuelle drei- (oder
+vier-)fache Pflege:**
 1. Die echte React-Komponente
-2. `imageExport.ts` → `renderShapeToStaticSvg()`
+2. `modules/<typ>/io/staticSvg.ts` (der Export-Renderer des Moduls)
 3. `ToolboxIcon.tsx`
 4. Falls es ein eigenes BPMN-Flusselement ist: `modules/bpmn/io/bpmnXmlExport.ts` →
    `bpmnTagFor()` (ein realer früherer Bug: ein Shape fehlte deswegen komplett im
    XML-Export)
 
 Etwas davon zu vergessen erzeugt keinen Fehler — es produziert stillschweigend ein
-falsches/fehlendes Element in genau dieser einen Ausgabe. Beim Hinzufügen oder Ändern
-eines Shape-Typs alle vier Stellen aktualisieren.
+falsches/fehlendes Element in genau dieser einen Ausgabe. **`npm run check:export`
+meldet genau das** und sollte nach jeder Änderung an Shapes oder Export laufen.
 
-**Für das Wireframe-Modul ist das Muster angelegt, aber es genügt nicht** (Stand 08/2026):
-`modules/wireframe/shapes/sketch.ts` kapselt `rough.generator()` aus `roughjs` als
-pure, DOM-freie Funktionen (`sketchRect`, `sketchLine`, `sketchCircle`, `sketchPath`,
-alle über `seedFor(shapeId, discriminator)` geseedet für deterministisches, nicht
-flackerndes „Wackeln"), die identische Pfaddaten sowohl an den Live-JSX-Renderer
-(`<SketchPaths>`) als auch an das stringbasierte
-`renderWireframeShapeToStaticSvg()` in `imageExport.ts` liefern. Die eigentliche
-„Wie sieht dieses Shape aus"-Logik existiert genau einmal pro Shape-Typ; nur die
-*Registrierung* an drei Stellen bleibt (jetzt mechanisch, nicht fehleranfällig).
+**Zum Wireframe-Modul:** `modules/wireframe/shapes/sketch.ts` kapselt
+`rough.generator()` aus `roughjs` als pure, DOM-freie Funktionen (`sketchRect`,
+`sketchLine`, `sketchCircle`, `sketchPath`, alle über
+`seedFor(shapeId, discriminator)` geseedet für deterministisches, nicht
+flackerndes „Wackeln"), die identische Pfaddaten an den Live-JSX-Renderer
+(`<SketchPaths>`) und an `sketchPathsToSvgString()` im Export liefern.
 > **Nachgemessen und widerlegt:** Die geteilten Primitive sichern nur die
-> *Geometrie der Umrisse*. Füllung und Textplatzierung wurden in Live-Renderer
-> und Export weiterhin getrennt bestimmt und waren auseinandergelaufen — 28 von
-> 64 Typen wichen sichtbar ab (fehlendes `fillStyle: "solid"` liess Füllungen zu
-> Schraffuren werden, linksbündige Labels wurden zentriert). Behoben und seither
-> durch `npm run check:export` abgesichert. Wer hier etwas ändert, sollte den
-> Test danach laufen lassen.
+> *Geometrie der Umrisse*. Füllung und Textplatzierung wurden getrennt bestimmt
+> und waren auseinandergelaufen — 28 von 64 Typen wichen sichtbar ab (fehlendes
+> `fillStyle: "solid"` liess Füllungen zu Schraffuren werden, linksbündige Labels
+> wurden zentriert). Behoben und seither durch `npm run check:export` abgesichert.
+
+Die Stil-Panel-Overrides (Z-15) laufen für Wireframe-Shapes über **einen**
+gemeinsamen Punkt: `applySketchStyleOverride()` in `sketch.ts`, genutzt von
+`<SketchPaths>` und `sketchPathsToSvgString()`. Dabei wichtig: Rough.js legt die
+Füllfarbe je nach Füllstil an unterschiedliche Stellen — bei der voreingestellten
+Schraffur in den `stroke` der Füll-Linien, bei `fillStyle: "solid"` in deren
+`fill`. Deshalb trägt jeder `SketchPath` ein `role: "fill" | "outline"`; die
+Kontur ist immer der letzte von Rough.js gelieferte Pfad. Ein blindes
+Überschreiben von `fill` machte aus den Schraffurlinien eine gefüllte
+Zickzackfläche.
 
 Sollten die BPMN-Shapes je auf ein ähnliches Shared-Primitive-Muster migriert werden,
 ist das als separates, größeres Vorhaben zu behandeln — rückwirkend wurde es nicht
 gemacht.
+
+### Zeichen-Ebenen: Reihenfolge ist Bedienlogik, nicht Kosmetik
+
+In `CanvasEngine.tsx` entscheidet die DOM-Reihenfolge, welches Bedienelement einen
+Klick bekommt — SVG kennt kein `z-index`, der zuletzt gezeichnete Knoten gewinnt.
+Zwei reale Fehler kamen genau daher (beide 08/2026 behoben, siehe Befundbericht F-11):
+
+- Die unsichtbaren „Brücken"-Rechtecke der Hover-Pfeile (`HoverArrows`, 18 px vom
+  Shape-Rand bis zum Pfeil) lagen über der äußeren Hälfte der Verbindungs-Ports.
+  Ein Klick auf den sichtbar gezeichneten Port verschob das Element. Reihenfolge
+  daher jetzt bewusst: **HoverArrows → ShapePorts → ResizeHandle** (vom
+  schwächsten zum stärksten Anspruch).
+- Die Endpunkt-Griffe einer ausgewählten Verbindung wurden in der
+  `ConnectorLayer` gezeichnet, die absichtlich *unter* den Shapes liegt (Linien
+  sollen nicht über Formen laufen). Da ein Endpunkt per Definition auf dem Rand
+  seines Shapes sitzt, war er nie anklickbar. Sie liegen jetzt als eigene
+  Komponente `ConnectorEndpointHandles` in einer Ebene **über** den Shapes.
+
+Wer hier etwas umsortiert, sollte die Trefferzonen messen (`elementFromPoint` +
+`getComputedStyle(...).cursor` entlang einer Achse), nicht schätzen.
 
 ### Persistenz: drei unabhängige, nicht synchronisierte Mechanismen
 

@@ -1,20 +1,37 @@
 # Befundbericht: Analyse des BPMN-Editors
 
-> **Bearbeitungsstand 08/2026 — der Grossteil dieser Befunde ist behoben.**
-> Erledigt und jeweils per Testlauf bestaetigt: **F-01** (Export ignorierte das
-> Stil-Panel), **F-02** (ausgeblendete Elemente im Export), **F-03/F-04**
-> (Fuellung wurde Schraffur, Tooltip-Text unsichtbar), **F-05** (linksbuendige
-> Labels zentriert), **F-06** (Text-Grundlinien), **F-07/F-08/F-09**
-> (BPMN-XML: fehlende Ereignis-Definitionen, ungueltige Pool-Referenzen,
-> Throw- statt Catch-Events), **F-12** (Einfuegen stapelte Kopien),
-> **F-13** (Strg+D). `npm run check:export` meldet 64 von 64 Shape-Typen im
-> Rahmen (zu Beginn der Analyse: 36 von 64).
+> **Bearbeitungsstand 08/2026 - alle Befunde dieses Berichts sind behoben.**
+> Erledigt und jeweils per Testlauf im echten Browser bestaetigt: **F-01**
+> (Export ignorierte das Stil-Panel), **F-02** (ausgeblendete Elemente im
+> Export), **F-03/F-04** (Fuellung wurde Schraffur, Tooltip-Text unsichtbar),
+> **F-05** (linksbuendige Labels zentriert), **F-06** (Text-Grundlinien),
+> **F-07/F-08/F-09** (BPMN-XML: fehlende Ereignis-Definitionen, ungueltige
+> Pool-Referenzen, Throw- statt Catch-Events), **F-10** (BPMN-Export ohne
+> BPMN-Elemente), **F-11** (verdeckter Verbindungs-Port), **F-12** (Einfuegen
+> stapelte Kopien), **F-13** (Strg+D). `npm run check:export` meldet
+> durchgehend 64 von 64 Shape-Typen im Rahmen (zu Beginn der Analyse: 36).
 >
-> **Offen:** F-10 (kein Hinweis beim BPMN-Export eines Diagramms ohne
-> BPMN-Elemente), F-11 (Verbindungs-Port von der Verschiebe-Trefffläche
-> ueberdeckt) sowie zwei Inkonsistenzen: `core/io/imageExport.ts` importiert
-> `sketch.ts` aus dem Wireframe-Modul, und das Stil-Panel bleibt bei
-> Wireframe-Shapes wirkungslos (auch auf dem Bildschirm).
+> Ebenfalls beseitigt sind die beiden im Bericht genannten Inkonsistenzen:
+> `core/io/imageExport.ts` importiert nichts mehr aus einem Modul (die
+> Shape-Darstellung fuer den Export liefert jetzt jedes Modul selbst ueber
+> `ShapeRegistry.setStaticSvgRenderer`), und das Stil-Panel wirkt jetzt auch
+> auf Wireframe-Shapes - auf dem Bildschirm und im Export gleichermassen.
+>
+> **Zwei Korrekturen am urspruenglichen Befund F-11**, aus der Nachmessung:
+> 1. Die Aussage "der Port erzeugt in KEINER Position eine Verbindung" war zu
+>    hart. Die innere Port-Haelfte funktionierte; der damalige Test hatte zu
+>    weit vom Ziel-Port entfernt losgelassen. Zutreffend war der Kern des
+>    Befundes: Die aeussere Haelfte lag unter der Verschiebe-Trefffaeche.
+> 2. Neu dazugekommen: Wurde ein Hover-Pfeil MITTEN auf einem vorhandenen
+>    Element losgelassen, entstand ein neues Element genau darueber, statt
+>    sich mit dem vorhandenen zu verbinden. Gleiche Ursache (Zielsuche nur
+>    im 25-px-Umkreis eines Ports), gleiche Behebung.
+>
+> Zusaetzlich dabei gefunden und behoben: Der Endpunkt-Griff einer
+> ausgewaehlten Verbindung war nie anklickbar - er sitzt per Definition auf
+> dem Rand seines Shapes, die Verbindungsebene liegt aber unter den Shapes.
+> Ein Zug daran verschob das Shape. Die Griffe liegen jetzt in einer eigenen
+> Ebene ueber den Shapes.
 >
 > Der folgende Text ist der urspruengliche Befund und bleibt als Beleg und
 > Reproduktionsanleitung unveraendert stehen.

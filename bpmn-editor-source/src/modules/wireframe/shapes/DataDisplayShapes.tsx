@@ -12,10 +12,10 @@ function ListRender({ shape, isSelected }: ShapeRenderProps) {
   const rowHeight = h / items.length;
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
       {items.map((item, i) => (
         <g key={i}>
-          {i > 0 && <SketchPaths paths={sketchLine(4, rowHeight * i, w - 4, rowHeight * i, seedFor(shape.id, `sep${i}`), { stroke, strokeWidth: 0.8 })} />}
+          {i > 0 && <SketchPaths shape={shape} paths={sketchLine(4, rowHeight * i, w - 4, rowHeight * i, seedFor(shape.id, `sep${i}`), { stroke, strokeWidth: 0.8 })} />}
           <MultilineText text={item} x={10} y={rowHeight * i + rowHeight / 2 + 4} fontSize={11.5} fill={WIREFRAME_COLORS.text} textAnchor="start" centerVertically={false} />
         </g>
       ))}
@@ -34,17 +34,17 @@ function TableRender({ shape, isSelected }: ShapeRenderProps) {
 
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
-      <SketchPaths paths={sketchLine(0, headerHeight, w, headerHeight, seedFor(shape.id, "headersep"), { stroke, strokeWidth: 1.4 })} />
+      <SketchPaths shape={shape} paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchLine(0, headerHeight, w, headerHeight, seedFor(shape.id, "headersep"), { stroke, strokeWidth: 1.4 })} />
       {columns.map((col, i) => (
         <g key={i}>
           <MultilineText text={col} x={colWidth * i + 8} y={headerHeight / 2 + 4} fontSize={11} fill={WIREFRAME_COLORS.text} textAnchor="start" centerVertically={false} />
-          {i > 0 && <SketchPaths paths={sketchLine(colWidth * i, 0, colWidth * i, h, seedFor(shape.id, `col${i}`), { stroke, strokeWidth: 0.8 })} />}
+          {i > 0 && <SketchPaths shape={shape} paths={sketchLine(colWidth * i, 0, colWidth * i, h, seedFor(shape.id, `col${i}`), { stroke, strokeWidth: 0.8 })} />}
         </g>
       ))}
       {rows.map((row, i) => (
         <g key={i}>
-          {i > 0 && <SketchPaths paths={sketchLine(0, headerHeight + rowHeight * i, w, headerHeight + rowHeight * i, seedFor(shape.id, `row${i}`), { stroke, strokeWidth: 0.6 })} />}
+          {i > 0 && <SketchPaths shape={shape} paths={sketchLine(0, headerHeight + rowHeight * i, w, headerHeight + rowHeight * i, seedFor(shape.id, `row${i}`), { stroke, strokeWidth: 0.6 })} />}
           <MultilineText text={row} x={8} y={headerHeight + rowHeight * i + rowHeight / 2 + 4} fontSize={10.5} fill={WIREFRAME_COLORS.text} textAnchor="start" centerVertically={false} />
         </g>
       ))}
@@ -61,7 +61,7 @@ function TreeRender({ shape, isSelected }: ShapeRenderProps) {
 
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
       {rawRows.map((row, i) => {
         const indentLevel = (row.match(/^ */)?.[0].length ?? 0) / 2;
         const text = row.trimStart();
@@ -70,7 +70,7 @@ function TreeRender({ shape, isSelected }: ShapeRenderProps) {
           <g key={i}>
             {indentLevel === 0 && (
               <g transform={`translate(8 ${rowHeight * i + rowHeight / 2 - 4.5})`}>
-                <SketchPaths paths={sketchRect(9, 9, seedFor(shape.id, `box${i}`), { stroke })} />
+                <SketchPaths shape={shape} paths={sketchRect(9, 9, seedFor(shape.id, `box${i}`), { stroke })} />
               </g>
             )}
             <MultilineText text={text} x={x + (indentLevel === 0 ? 14 : 0)} y={rowHeight * i + rowHeight / 2 + 4} fontSize={11} fill={WIREFRAME_COLORS.text} textAnchor="start" centerVertically={false} />
@@ -87,8 +87,8 @@ function ProgressBarRender({ shape, isSelected }: ShapeRenderProps) {
   const progress = Math.min(1, Math.max(0, (shape.data.progress as number) ?? 0.6));
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
-      <SketchPaths paths={sketchRect(w * progress, h, seedFor(shape.id, "fill"), { stroke, fill: WIREFRAME_COLORS.accentFill, fillStyle: "solid" })} />
+      <SketchPaths shape={shape} paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchRect(w * progress, h, seedFor(shape.id, "fill"), { stroke, fill: WIREFRAME_COLORS.accentFill, fillStyle: "solid" })} />
     </g>
   );
 }
@@ -98,13 +98,13 @@ function ImagePlaceholderRender({ shape, isSelected }: ShapeRenderProps) {
   const { width: w, height: h } = shape.size;
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" }, 4)} />
-      <SketchPaths paths={sketchCircle(w * 0.64, h * 0.2, Math.min(w, h) * 0.14, seedFor(shape.id, "sun"), { stroke })} />
-      <SketchPaths paths={sketchLine(w * 0.1, h * 0.75, w * 0.4, h * 0.4, seedFor(shape.id, "m1"), { stroke })} />
-      <SketchPaths paths={sketchLine(w * 0.4, h * 0.4, w * 0.62, h * 0.62, seedFor(shape.id, "m2"), { stroke })} />
-      <SketchPaths paths={sketchLine(w * 0.62, h * 0.62, w * 0.85, h * 0.3, seedFor(shape.id, "m3"), { stroke })} />
-      <SketchPaths paths={sketchLine(w * 0.85, h * 0.3, w * 0.92, h * 0.75, seedFor(shape.id, "m4"), { stroke })} />
-      <SketchPaths paths={sketchLine(w * 0.08, h * 0.75, w * 0.92, h * 0.75, seedFor(shape.id, "ground"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" }, 4)} />
+      <SketchPaths shape={shape} paths={sketchCircle(w * 0.64, h * 0.2, Math.min(w, h) * 0.14, seedFor(shape.id, "sun"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchLine(w * 0.1, h * 0.75, w * 0.4, h * 0.4, seedFor(shape.id, "m1"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchLine(w * 0.4, h * 0.4, w * 0.62, h * 0.62, seedFor(shape.id, "m2"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchLine(w * 0.62, h * 0.62, w * 0.85, h * 0.3, seedFor(shape.id, "m3"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchLine(w * 0.85, h * 0.3, w * 0.92, h * 0.75, seedFor(shape.id, "m4"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchLine(w * 0.08, h * 0.75, w * 0.92, h * 0.75, seedFor(shape.id, "ground"), { stroke })} />
     </g>
   );
 }
@@ -116,12 +116,12 @@ function CardRender({ shape, isSelected }: ShapeRenderProps) {
   const label = (shape.data.label as string) ?? "Titel";
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
       <g transform="translate(8 8)">
-        <SketchPaths paths={sketchRoundedRect(w - 16, imgHeight - 10, seedFor(shape.id, "img"), { stroke }, 3)} />
+        <SketchPaths shape={shape} paths={sketchRoundedRect(w - 16, imgHeight - 10, seedFor(shape.id, "img"), { stroke }, 3)} />
       </g>
       <MultilineText text={label} x={8} y={imgHeight + 18} fontSize={11.5} fill={WIREFRAME_COLORS.text} textAnchor="start" centerVertically={false} />
-      <SketchPaths paths={sketchLine(8, imgHeight + 28, w - 24, imgHeight + 28, seedFor(shape.id, "l1"), { stroke: WIREFRAME_COLORS.accentFill, strokeWidth: 2 })} />
+      <SketchPaths shape={shape} paths={sketchLine(8, imgHeight + 28, w - 24, imgHeight + 28, seedFor(shape.id, "l1"), { stroke: WIREFRAME_COLORS.accentFill, strokeWidth: 2 })} />
     </g>
   );
 }
@@ -139,15 +139,15 @@ function ChartRender({ shape, isSelected }: ShapeRenderProps) {
 
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
-      <SketchPaths paths={sketchLine(padding, h - padding, w - padding, h - padding, seedFor(shape.id, "axis"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchLine(padding, h - padding, w - padding, h - padding, seedFor(shape.id, "axis"), { stroke })} />
       {CHART_BAR_HEIGHTS.map((ratio, i) => {
         const barH = innerH * ratio;
         const x = padding + i * (barW + barGap);
         const y = h - padding - barH;
         return (
           <g key={i} transform={`translate(${x} ${y})`}>
-            <SketchPaths paths={sketchRect(barW, barH, seedFor(shape.id, `bar${i}`), { stroke, fill: WIREFRAME_COLORS.accentFill, fillStyle: "solid" })} />
+            <SketchPaths shape={shape} paths={sketchRect(barW, barH, seedFor(shape.id, `bar${i}`), { stroke, fill: WIREFRAME_COLORS.accentFill, fillStyle: "solid" })} />
           </g>
         );
       })}
@@ -164,7 +164,7 @@ function IconRender({ shape, isSelected }: ShapeRenderProps) {
   const r = Math.min(w, h) * 0.42;
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchSparkle(w / 2, h / 2, r, seedFor(shape.id), { stroke, fill: WIREFRAME_COLORS.fillLight, fillStyle: "solid" })} />
+      <SketchPaths shape={shape} paths={sketchSparkle(w / 2, h / 2, r, seedFor(shape.id), { stroke, fill: WIREFRAME_COLORS.fillLight, fillStyle: "solid" })} />
     </g>
   );
 }

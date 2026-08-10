@@ -15,14 +15,14 @@ function WindowChrome({ shape, isSelected, titleBarFill }: ShapeRenderProps & { 
 
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRoundedRect(w, h, seed, { stroke, fill: "#ffffff" }, 5)} />
-      <SketchPaths paths={sketchRect(w, TITLE_BAR_HEIGHT, seedFor(shape.id, "titlebar"), { stroke, fill: titleBarFill })} />
+      <SketchPaths shape={shape} paths={sketchRoundedRect(w, h, seed, { stroke, fill: "#ffffff" }, 5)} />
+      <SketchPaths shape={shape} paths={sketchRect(w, TITLE_BAR_HEIGHT, seedFor(shape.id, "titlebar"), { stroke, fill: titleBarFill })} />
       {/* System-Menü-Kreis links */}
-      <SketchPaths paths={sketchCircle(16, TITLE_BAR_HEIGHT / 2, 8, seedFor(shape.id, "sysicon"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchCircle(16, TITLE_BAR_HEIGHT / 2, 8, seedFor(shape.id, "sysicon"), { stroke })} />
       <MultilineText text={label} x={w / 2 + 8} y={TITLE_BAR_HEIGHT / 2 + 4} fontSize={12} fill={WIREFRAME_COLORS.text} centerVertically={false} />
       {/* Schließen-X rechts */}
-      <SketchPaths paths={sketchLine(w - 20, 8, w - 8, TITLE_BAR_HEIGHT - 8, seedFor(shape.id, "closeA"), { stroke })} />
-      <SketchPaths paths={sketchLine(w - 8, 8, w - 20, TITLE_BAR_HEIGHT - 8, seedFor(shape.id, "closeB"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchLine(w - 20, 8, w - 8, TITLE_BAR_HEIGHT - 8, seedFor(shape.id, "closeA"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchLine(w - 8, 8, w - 20, TITLE_BAR_HEIGHT - 8, seedFor(shape.id, "closeB"), { stroke })} />
     </g>
   );
 }
@@ -49,12 +49,12 @@ function MessageBoxRender({ shape, isSelected }: ShapeRenderProps) {
 
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRoundedRect(w, h, seed, { stroke, fill: "#ffffff" }, 5)} />
-      <SketchPaths paths={sketchCircle(24, 30, 24, seedFor(shape.id, "icon"), { stroke })} />
+      <SketchPaths shape={shape} paths={sketchRoundedRect(w, h, seed, { stroke, fill: "#ffffff" }, 5)} />
+      <SketchPaths shape={shape} paths={sketchCircle(24, 30, 24, seedFor(shape.id, "icon"), { stroke })} />
       <MultilineText text="!" x={24} y={38} fontSize={18} fill={WIREFRAME_COLORS.text} />
       <MultilineText text={label} x={w / 2 + 16} y={34} fontSize={12} fill={WIREFRAME_COLORS.text} />
       <g transform={`translate(${w - btnW - 12} ${h - btnH - 10})`}>
-        <SketchPaths paths={sketchRoundedRect(btnW, btnH, seedFor(shape.id, "ok"), { stroke }, 4)} />
+        <SketchPaths shape={shape} paths={sketchRoundedRect(btnW, btnH, seedFor(shape.id, "ok"), { stroke }, 4)} />
         <MultilineText text="OK" x={btnW / 2} y={btnH / 2 + 4} fontSize={11.5} fill={WIREFRAME_COLORS.text} />
       </g>
     </g>

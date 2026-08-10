@@ -5,8 +5,8 @@ import { GridLayer } from "./GridLayer";
 import { ShapeRegistry } from "../shapes/ShapeRegistry";
 import { ConnectorTypeRegistry } from "../shapes/ConnectorTypeRegistry";
 import { ShapePorts } from "./ShapePorts";
-import { ConnectorLayer } from "./ConnectorLayer";
-import { findPortNear, findFreePortOnShapeBorder, freePortId } from "./connectorGeometry";
+import { ConnectorLayer, ConnectorEndpointHandles } from "./ConnectorLayer";
+import { findPortNear, findFreePortOnShapeBorder, findPortOnShapeAtPoint, freePortId } from "./connectorGeometry";
 import { findContainerAt, isAncestor } from "./containment";
 import { ResizeHandle, type ResizeDirection } from "./ResizeHandle";
 import { RotateHandle } from "./RotateHandle";
@@ -839,6 +839,16 @@ export function CanvasEngine() {
             // Shape-Rand ausweichen (Z-07), statt den Verbindungsversuch
             // sofort aufzugeben.
             if (!target) target = findFreePortOnShapeBorder(shapes, { x: worldX, y: worldY }, maxDistance);
+            // Immer noch nichts, aber mitten auf einer Shape losgelassen (F-11):
+            // die Absicht ist eindeutig - andocken am Port, der der Quelle am
+            // nächsten liegt.
+            if (!target) {
+              const quelle = shapes[draft.sourceShapeId];
+              const von = quelle
+                ? { x: quelle.position.x + quelle.size.width / 2, y: quelle.position.y + quelle.size.height / 2 }
+                : { x: worldX, y: worldY };
+              target = findPortOnShapeAtPoint(shapes, { x: worldX, y: worldY }, von);
+            }
 
             if (target && target.shapeId !== draft.sourceShapeId) {
               addConnector({
@@ -876,6 +886,16 @@ export function CanvasEngine() {
             const connector = useCanvasStore.getState().connectors[draft.connectorId];
             const otherEndShapeId =
               connector && draft.end === "source" ? connector.targetShapeId : connector?.sourceShapeId;
+            // Wie beim Neu-Verbinden (F-11): mitten auf einer Shape losgelassen
+            // zählt als Andocken an dieser Shape. Bezugspunkt ist hier das
+            // gegenüberliegende Ende der Verbindung.
+            if (!target) {
+              const gegenueber = otherEndShapeId ? shapes[otherEndShapeId] : undefined;
+              const von = gegenueber
+                ? { x: gegenueber.position.x + gegenueber.size.width / 2, y: gegenueber.position.y + gegenueber.size.height / 2 }
+                : { x: worldX, y: worldY };
+              target = findPortOnShapeAtPoint(shapes, { x: worldX, y: worldY }, von);
+            }
             if (target && target.shapeId !== otherEndShapeId) {
               setConnectorEndpoint(draft.connectorId, draft.end, target.shapeId, target.portId);
               pushHistorySnapshot();
@@ -1753,7 +1773,6 @@ export function CanvasEngine() {
             onSelectConnector={handleConnectorMouseDown}
             onDoubleClickConnector={handleConnectorDoubleClick}
             onContextMenuConnector={handleConnectorContextMenu}
-            onEndpointMouseDown={handleEndpointMouseDown}
             onAddWaypoint={handleAddWaypoint}
             onQuickInsertWaypoint={handleQuickInsertWaypoint}
             onWaypointMouseDown={handleWaypointMouseDown}
@@ -1855,15 +1874,24 @@ export function CanvasEngine() {
                   )}
                 </g>
                 <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-                  <ShapePorts
-                    shape={shape}
-                    visible={showPorts}
-                    onPortMouseDown={(portId, e) => handlePortMouseDown(shape.id, portId, e)}
-                  />
+                  {/* Reihenfolge ist hier Bedienlogik, keine Kosmetik (F-11):
+                      Die "Brücken"-Rechtecke der Hover-Pfeile reichen vom
+                      Shape-Rand bis zum jeweiligen Pfeil (18 px) und liegen
+                      damit genau über der äußeren Hälfte der Ports. Standen
+                      sie - wie zuvor - WEITER HINTEN im DOM, gewannen sie den
+                      Treffertest: Ein Klick auf den sichtbar gezeichneten Port
+                      verschob das Element, statt eine Verbindung zu beginnen.
+                      Deshalb zuerst die Pfeile, dann die Ports, dann die
+                      Resize-Griffe - vom schwächsten zum stärksten Anspruch. */}
                   <HoverArrows
                     shape={shape}
                     visible={showHoverArrows}
                     onArrowMouseDown={(direction, e) => handleHoverArrowMouseDown(shape.id, direction, e)}
+                  />
+                  <ShapePorts
+                    shape={shape}
+                    visible={showPorts}
+                    onPortMouseDown={(portId, e) => handlePortMouseDown(shape.id, portId, e)}
                   />
                   {isSelected && canResize && selectedShapeIds.length <= 1 && (
                     <ResizeHandle
@@ -1876,6 +1904,17 @@ export function CanvasEngine() {
               </g>
             );
           })}
+
+          {/* Endpunkt-Griffe der ausgewählten Verbindung - bewusst NACH den
+              Shapes, damit sie über deren Trefferfläche und Ports liegen
+              (siehe ConnectorEndpointHandles in ConnectorLayer.tsx). */}
+          {selectedConnectorId && !reconnectDraft && connectors[selectedConnectorId] && (
+            <ConnectorEndpointHandles
+              connector={connectors[selectedConnectorId]}
+              shapes={shapes}
+              onEndpointMouseDown={handleEndpointMouseDown}
+            />
+          )}
 
           {/* Mehrfachauswahl-Resize (Z-03): eigene 8 Griffe an der
               gemeinsamen Bounding-Box, statt an jeder Einzel-Shape. Nur

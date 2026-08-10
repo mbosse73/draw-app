@@ -14,7 +14,7 @@ function CommentBubbleRender({ shape, isSelected }: ShapeRenderProps) {
   const d = `M 2 2 L ${w - 2} 2 L ${w - 2} ${bodyH} L ${tailW * 2} ${bodyH} L ${tailW} ${h - 2} L ${tailW} ${bodyH} L 2 ${bodyH} Z`;
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchPath(d, seedFor(shape.id), { stroke, fill: "#fff8e0", fillStyle: "solid" })} />
+      <SketchPaths shape={shape} paths={sketchPath(d, seedFor(shape.id), { stroke, fill: "#fff8e0", fillStyle: "solid" })} />
       <MultilineText text={label} x={w / 2} y={bodyH / 2 + 4} fontSize={12} fill={WIREFRAME_COLORS.text} />
     </g>
   );
@@ -25,7 +25,7 @@ function HighlightBoxRender({ shape, isSelected }: ShapeRenderProps) {
   const { width: w, height: h } = shape.size;
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, strokeWidth: 1.8, strokeLineDash: [6, 4] }, 4)} />
+      <SketchPaths shape={shape} paths={sketchRoundedRect(w, h, seedFor(shape.id), { stroke, strokeWidth: 1.8, strokeLineDash: [6, 4] }, 4)} />
     </g>
   );
 }
@@ -41,7 +41,7 @@ function TooltipRender({ shape, isSelected }: ShapeRenderProps) {
   const d = `M 2 2 L ${w - 2} 2 L ${w - 2} ${bodyH} L ${w / 2 + tailW} ${bodyH} L ${w / 2} ${h - 2} L ${w / 2 - tailW} ${bodyH} L 2 ${bodyH} Z`;
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchPath(d, seedFor(shape.id), { stroke, fill: "#333333", fillStyle: "solid" })} />
+      <SketchPaths shape={shape} paths={sketchPath(d, seedFor(shape.id), { stroke, fill: "#333333", fillStyle: "solid" })} />
       <MultilineText text={label} x={w / 2} y={bodyH / 2 + 4} fontSize={11} fill="#ffffff" />
     </g>
   );

@@ -13,7 +13,7 @@ function MenuBarRender({ shape, isSelected }: ShapeRenderProps) {
 
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: WIREFRAME_COLORS.fillLight })} />
+      <SketchPaths shape={shape} paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: WIREFRAME_COLORS.fillLight })} />
       {items.map((item, i) => (
         <MultilineText key={i} text={item} x={gap * i + gap / 2} y={h / 2 + 4} fontSize={11} fill={WIREFRAME_COLORS.text} centerVertically={false} />
       ))}
@@ -29,10 +29,10 @@ function DropdownMenuRender({ shape, isSelected }: ShapeRenderProps) {
 
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
+      <SketchPaths shape={shape} paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: "#ffffff" })} />
       {items.map((item, i) => (
         <g key={i}>
-          {i > 0 && <SketchPaths paths={sketchLine(4, rowHeight * i, w - 4, rowHeight * i, seedFor(shape.id, `sep${i}`), { strokeWidth: 0.8, stroke })} />}
+          {i > 0 && <SketchPaths shape={shape} paths={sketchLine(4, rowHeight * i, w - 4, rowHeight * i, seedFor(shape.id, `sep${i}`), { strokeWidth: 0.8, stroke })} />}
           <MultilineText text={item} x={12} y={rowHeight * i + rowHeight / 2 + 4} fontSize={11} fill={WIREFRAME_COLORS.text} textAnchor="start" centerVertically={false} />
         </g>
       ))}
@@ -47,10 +47,10 @@ function ToolbarRender({ shape, isSelected }: ShapeRenderProps) {
 
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: WIREFRAME_COLORS.fillLight })} />
+      <SketchPaths shape={shape} paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: WIREFRAME_COLORS.fillLight })} />
       {Array.from({ length: buttonCount }).map((_, i) => (
         <g key={i} transform={`translate(${4 + i * h} 4)`}>
-          <SketchPaths paths={sketchRect(h - 8, h - 8, seedFor(shape.id, `btn${i}`), { stroke })} />
+          <SketchPaths shape={shape} paths={sketchRect(h - 8, h - 8, seedFor(shape.id, `btn${i}`), { stroke })} />
         </g>
       ))}
     </g>
@@ -66,12 +66,12 @@ function RibbonRender({ shape, isSelected }: ShapeRenderProps) {
 
   return (
     <g transform={`translate(${shape.position.x} ${shape.position.y})`}>
-      <SketchPaths paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: WIREFRAME_COLORS.fillLight })} />
+      <SketchPaths shape={shape} paths={sketchRect(w, h, seedFor(shape.id), { stroke, fill: WIREFRAME_COLORS.fillLight })} />
       {Array.from({ length: RIBBON_GROUP_COUNT }).map((_, g) => (
         <g key={g} transform={`translate(${g * groupWidth + 6} 6)`}>
-          <SketchPaths paths={sketchRect(20, 20, seedFor(shape.id, `ic${g}a`), { stroke })} />
-          <SketchPaths paths={sketchRect(20, 20, seedFor(shape.id, `ic${g}b`), { stroke })} />
-          {g > 0 && <SketchPaths paths={sketchLine(-6, 0, -6, h - 12, seedFor(shape.id, `sep${g}`), { stroke, strokeWidth: 0.8 })} />}
+          <SketchPaths shape={shape} paths={sketchRect(20, 20, seedFor(shape.id, `ic${g}a`), { stroke })} />
+          <SketchPaths shape={shape} paths={sketchRect(20, 20, seedFor(shape.id, `ic${g}b`), { stroke })} />
+          {g > 0 && <SketchPaths shape={shape} paths={sketchLine(-6, 0, -6, h - 12, seedFor(shape.id, `sep${g}`), { stroke, strokeWidth: 0.8 })} />}
         </g>
       ))}
     </g>
