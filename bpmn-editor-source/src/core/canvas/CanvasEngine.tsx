@@ -312,6 +312,15 @@ export function CanvasEngine() {
         pasteClipboard();
         pushHistorySnapshot();
       }
+      // Strg+D dupliziert die Auswahl - dieselbe Kopieren-und-Einfuegen-Folge,
+      // die auch der Menuepunkt "Duplizieren" ausloest (MenuBar.tsx). Ohne
+      // preventDefault oeffnet der Browser stattdessen sein Lesezeichen-Fenster.
+      if ((e.ctrlKey || e.metaKey) && e.code === "KeyD" && !isTypingContext) {
+        e.preventDefault();
+        copySelectionToClipboard();
+        pasteClipboard();
+        pushHistorySnapshot();
+      }
       // e.key statt e.code, weil e.code die PHYSISCHE US-Tastenposition meint:
       // auf QWERTZ-Tastaturen (z.B. Deutsch) liegen Y und Z vertauscht, sodass
       // "KeyZ" dort tatsächlich Y auslösen würde. e.key liefert das layoutkorrekte Zeichen.

@@ -436,7 +436,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
       ${paths(sketchRoundedRect(w, h, seed, { stroke, fill: "#ffffff" }))}
       ${extra.join("")}
-      ${placeholder ? multilineTextMarkup(placeholder, kind === "searchField" ? 30 : 8, h / 2 + 4, textFill, 11.5, false, "start") : ""}
+      ${placeholder ? multilineTextMarkup(placeholder, kind === "searchField" ? 30 : kind === "spinner" ? 10 : 8, h / 2 + 4, textFill, kind === "searchField" ? 11 : kind === "spinner" ? 12 : 11.5, false, "start") : ""}
     </g>`;
   }
 
@@ -569,7 +569,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
   }
 
   if (kind === "heading" || kind === "label") {
-    return `<g transform="translate(${shape.position.x} ${shape.position.y})">${multilineTextMarkup(label || (kind === "heading" ? "Überschrift" : "Label"), w / 2, h / 2 + 6, "#333333", kind === "heading" ? 20 : 12.5)}</g>`;
+    return `<g transform="translate(${shape.position.x} ${shape.position.y})">${multilineTextMarkup(label || (kind === "heading" ? "Überschrift" : "Label"), w / 2, kind === "heading" ? h / 2 + 6 : h / 2 + 4, "#333333", kind === "heading" ? 20 : 12.5)}</g>`;
   }
 
   if (kind === "link") {
@@ -663,7 +663,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
         const x = cursorX;
         cursorX += item.length * 6.5 + 20;
         const isLast = i === items.length - 1;
-        const text = multilineTextMarkup(item, x, h / 2 + 4, isLast ? "#333333" : stroke, 11.5, false, "start");
+        const text = multilineTextMarkup(item, x, h / 2 + 4, stroke, 11.5, false, "start");
         const chevron = !isLast ? multilineTextMarkup("›", x + item.length * 6.5 + 8, h / 2 + 4, stroke, 12, false, "start") : "";
         return text + chevron;
       })
@@ -822,9 +822,14 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
 
   if (shape.type === "bpmn.pool" || shape.type === "bpmn.lane") {
     const titleBand = 24;
+    // Pool und Lane teilen sich diesen Zweig, unterscheiden sich live aber in
+    // Fuellung und Linienstaerke (PoolLaneShapes.tsx): die Lane ist bewusst
+    // leichter gezeichnet, damit sich mehrere Lanes in einem Pool stapeln
+    // lassen, ohne sich mit vollen Rahmen zu ueberdecken.
+    const istPool = shape.type === "bpmn.pool";
     return `<g transform="translate(${x} ${y})">
-      <rect width="${w}" height="${h}" fill="${sf("#ffffff")}" stroke="${ss("#454d5a")}" stroke-width="${sw(1)}"${sd()} />
-      <rect width="${titleBand}" height="${h}" fill="${shape.type === "bpmn.pool" ? "#eef1f8" : "#f6f7fa"}" stroke="#454d5a" stroke-width="1" />
+      <rect width="${w}" height="${h}" fill="${sf(istPool ? "#ffffff" : "rgba(255,255,255,0.4)")}" stroke="${ss("#454d5a")}" stroke-width="${sw(istPool ? 1.5 : 1)}"${sd()} />
+      <rect width="${titleBand}" height="${h}" fill="${istPool ? "#eef1f8" : "#f6f7fa"}" stroke="${ss("#454d5a")}" stroke-width="${istPool ? 1.5 : 1}" />
       <g transform="translate(${titleBand / 2} ${h / 2}) rotate(-90)">${multilineTextMarkup(label || (shape.type === "bpmn.pool" ? "Pool" : "Lane"), 0, 0, "#2f3540", shape.type === "bpmn.pool" ? 13 : 12)}</g>
     </g>`;
   }
