@@ -1,5 +1,3 @@
-import type { ShapeInstance } from "../../../core/shapes/types";
-
 // Standard-Größen für BPMN 2.0 Elemente, angelehnt an die üblichen
 // Proportionen aus draw.io/Camunda Modeler für Wiedererkennbarkeit.
 
@@ -31,25 +29,16 @@ export const BPMN_COLORS = {
  * core/, weil nur BPMN-Shapes aktuell so auf shape.style reagieren (siehe
  * Abschnitt 4.5-artige Einschränkung, im Technik-Dokument vermerkt).
  */
-export function resolveFill(shape: ShapeInstance, fallback: string): string {
-  return shape.style?.fillColor ?? fallback;
-}
-
-export function resolveStroke(shape: ShapeInstance, fallback: string): string {
-  return shape.style?.strokeColor ?? fallback;
-}
-
-export function resolveStrokeWidth(shape: ShapeInstance, fallback: number): number {
-  return shape.style?.strokeWidth ?? fallback;
-}
-
-export function resolveDashArray(shape: ShapeInstance, fallback?: string): string | undefined {
-  const dashStyle = shape.style?.dashStyle;
-  if (dashStyle === "dashed") return "8 5";
-  if (dashStyle === "dotted") return "2 3";
-  if (dashStyle === "solid") return undefined;
-  return fallback;
-}
+/** Generische Stil-Auflösung - liegt seit 08/2026 im Core
+ *  (`core/shapes/shapeStyle.ts`), weil auch `core/io/imageExport.ts` sie
+ *  braucht und der Core nicht aus einem Modul importieren darf. Hier nur
+ *  weiter re-exportiert, damit bestehende Modul-Imports gültig bleiben. */
+export {
+  resolveFill,
+  resolveStroke,
+  resolveStrokeWidth,
+  resolveDashArray,
+} from "../../../core/shapes/shapeStyle";
 
 /** Ports für rechteckige Elemente (Tasks): 4 Seiten mittig. */
 export const RECTANGLE_PORTS = [

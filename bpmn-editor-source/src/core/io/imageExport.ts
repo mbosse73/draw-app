@@ -4,6 +4,7 @@ import { computeConnectorPath } from "../canvas/connectorPath";
 import { ConnectorTypeRegistry, DEFAULT_CONNECTOR_STYLE } from "../shapes/ConnectorTypeRegistry";
 import { ShapeRegistry } from "../shapes/ShapeRegistry";
 import type { ShapeInstance } from "../shapes/types";
+import { resolveFill, resolveStroke, resolveStrokeWidth, dashAttr as styleDashAttr } from "../shapes/shapeStyle";
 import {
   arrowMarkerDescriptors,
   arrowMarkerElementId,
@@ -14,6 +15,21 @@ import {
 import { sketchRect, sketchRoundedRect, sketchLine, sketchCircle, sketchPath, sketchSparkle, sketchPathsToSvgString, seedFor, parseItems } from "../../modules/wireframe/shapes/sketch";
 
 const EXPORT_MARKER_VARIANT = { id: "export", color: "#555555" };
+const SHADOW_FILTER_ID = "export-shape-shadow";
+
+/** Deckkraft und Schatten aus dem Stil-Panel - der Live-Renderer legt beides in
+ *  CanvasEngine.tsx generisch um JEDE Shape (opacity + CSS drop-shadow), also
+ *  muss der Export es hier ebenso generisch tun. Der CSS-Filter wird dabei auf
+ *  das SVG-Pendant feDropShadow abgebildet, damit die Datei auch außerhalb des
+ *  Browsers (Inkscape, Illustrator) korrekt aussieht. */
+function wrapWithVisualStyle(shape: ShapeInstance, markup: string): string {
+  const opacity = shape.style?.opacity ?? 1;
+  const hasShadow = Boolean(shape.style?.shadow);
+  if (opacity >= 1 && !hasShadow) return markup;
+  const opacityAttr = opacity < 1 ? ` opacity="${opacity}"` : "";
+  const shadowAttr = hasShadow ? ` filter="url(#${SHADOW_FILTER_ID})"` : "";
+  return `<g${opacityAttr}${shadowAttr}>${markup}</g>`;
+}
 
 function dashArrayForExport(lineStyle: string): string {
   const attr = dashArrayFor(lineStyle as "solid" | "dashed" | "dotted");
@@ -105,6 +121,11 @@ export function buildExportSvg(): string {
   // Ausgeblendete Kinder (eingeklappte Sub-Prozesse, deren angeheftete
   // Boundary Events) auch im Export überspringen, konsistent zum Bildschirm.
   function isVisible(shape: ShapeInstance): boolean {
+    // Manuell ausgeblendete Shapes (Z-05, shape.hidden) exportiert der Renderer
+    // ebenso wenig wie der Bildschirm - CanvasEngine.tsx überspringt sie dort
+    // beim Rendern. Ohne diese Prüfung tauchen bewusst versteckte Elemente
+    // wieder in SVG/PNG auf.
+    if (shape.hidden) return false;
     let current: ShapeInstance | undefined = shape;
     const visited = new Set<string>();
     while (current) {
@@ -123,7 +144,7 @@ export function buildExportSvg(): string {
 
   const shapeMarkup = sortedShapes
     .filter(isVisible)
-    .map((shape) => wrapWithRotation(shape, renderShapeToStaticSvg(shape)))
+    .map((shape) => wrapWithVisualStyle(shape, wrapWithRotation(shape, renderShapeToStaticSvg(shape))))
     .join("\n");
 
   const connectorMarkup = connectors
@@ -160,6 +181,9 @@ export function buildExportSvg(): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${width} ${height}" width="${width}" height="${height}">
   <defs>
     ${arrowMarkerDefsMarkup()}
+    <filter id="${SHADOW_FILTER_ID}" x="-25%" y="-25%" width="160%" height="160%">
+      <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
   </defs>
   <rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="#ffffff" />
   ${connectorMarkup}
@@ -173,7 +197,11 @@ function multilineTextMarkup(
   y: number,
   fill: string,
   fontSize: number,
-  centerVertically = true
+  centerVertically = true,
+  /** Muss zum textAnchor der zugehörigen Live-Komponente passen (MultilineText).
+   *  Linksbündige Beschriftungen (Listen-, Tabellen-, Formularzeilen) rutschen
+   *  sonst im Export in die Mitte und überlappen ihr Bedienelement. */
+  anchor: "start" | "middle" | "end" = "middle"
 ): string {
   const lines = text.split("\n");
   const lineHeight = fontSize * 1.25;
@@ -181,7 +209,7 @@ function multilineTextMarkup(
   const tspans = lines
     .map((line, i) => `<tspan x="${x}" dy="${i === 0 ? startOffset : lineHeight}">${escapeXml(line) || "&#160;"}</tspan>`)
     .join("");
-  return `<text x="${x}" y="${y}" text-anchor="middle" font-size="${fontSize}" fill="${fill}" font-family="sans-serif">${tspans}</text>`;
+  return `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${fontSize}" fill="${fill}" font-family="sans-serif">${tspans}</text>`;
 }
 
 /** Trigger-Icon (Timer/Message/Error) für Events, als SVG-Fragment - Pendant zu TriggerIcon in EventShapes.tsx. */
@@ -321,7 +349,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
   if (kind === "panel") {
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
       ${paths(sketchRoundedRect(w, h, seed, { stroke }, 4))}
-      ${label ? multilineTextMarkup(label, 10, 14, "#333333", 11.5, false) : ""}
+      ${label ? multilineTextMarkup(label, 10, 14, "#333333", 11.5, false, "start") : ""}
     </g>`;
   }
 
@@ -346,7 +374,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
   if (kind === "statusBar") {
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
       ${paths(sketchRect(w, h, seed, { stroke, fill: "#f4f4f4" }))}
-      ${multilineTextMarkup(label || "Bereit", 10, h / 2 + 4, "#333333", 10.5, false)}
+      ${multilineTextMarkup(label || "Bereit", 10, h / 2 + 4, "#333333", 10.5, false, "start")}
     </g>`;
   }
 
@@ -363,7 +391,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     const rows = items
       .map((item, i) => {
         const sep = i > 0 ? paths(sketchLine(4, rowH * i, w - 4, rowH * i, seedFor(shape.id, `sep${i}`), { strokeWidth: 0.8, stroke })) : "";
-        return sep + multilineTextMarkup(item, 12, rowH * i + rowH / 2 + 4, "#333333", 11, false);
+        return sep + multilineTextMarkup(item, 12, rowH * i + rowH / 2 + 4, "#333333", 11, false, "start");
       })
       .join("");
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">${paths(sketchRect(w, h, seed, { stroke, fill: "#ffffff" }))}${rows}</g>`;
@@ -408,7 +436,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
       ${paths(sketchRoundedRect(w, h, seed, { stroke, fill: "#ffffff" }))}
       ${extra.join("")}
-      ${placeholder ? multilineTextMarkup(placeholder, kind === "searchField" ? 30 : 8, h / 2 + 4, textFill, 11.5, false) : ""}
+      ${placeholder ? multilineTextMarkup(placeholder, kind === "searchField" ? 30 : 8, h / 2 + 4, textFill, 11.5, false, "start") : ""}
     </g>`;
   }
 
@@ -426,11 +454,11 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     if (kind === "checkbox") {
       const box = Math.min(18, h);
       const check = checked ? paths(sketchPath(`M ${box * 0.2} ${box * 0.55} L ${box * 0.42} ${box * 0.78} L ${box * 0.82} ${box * 0.22}`, seedFor(shape.id, "check"), { stroke, strokeWidth: 1.8 })) : "";
-      return `<g transform="translate(${shape.position.x} ${shape.position.y})">${paths(sketchRoundedRect(box, box, seed, { stroke }))}${check}${multilineTextMarkup(text, box + 8, h / 2 + 4, "#333333", 12, false)}</g>`;
+      return `<g transform="translate(${shape.position.x} ${shape.position.y})">${paths(sketchRoundedRect(box, box, seed, { stroke }))}${check}${multilineTextMarkup(text, box + 8, h / 2 + 4, "#333333", 12, false, "start")}</g>`;
     }
     const d = Math.min(18, h);
-    const dot = checked ? paths(sketchCircle(d / 2, h / 2, d * 0.4, seedFor(shape.id, "dot"), { stroke, fill: stroke, roughness: 0.4 })) : "";
-    return `<g transform="translate(${shape.position.x} ${shape.position.y})">${paths(sketchCircle(d / 2, h / 2, d, seed, { stroke }))}${dot}${multilineTextMarkup(text, d + 10, h / 2 + 4, "#333333", 12, false)}</g>`;
+    const dot = checked ? paths(sketchCircle(d / 2, h / 2, d * 0.4, seedFor(shape.id, "dot"), { stroke, fill: stroke, fillStyle: "solid", roughness: 0.4 })) : "";
+    return `<g transform="translate(${shape.position.x} ${shape.position.y})">${paths(sketchCircle(d / 2, h / 2, d, seed, { stroke }))}${dot}${multilineTextMarkup(text, d + 10, h / 2 + 4, "#333333", 12, false, "start")}</g>`;
   }
 
   if (kind === "slider") {
@@ -444,7 +472,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
 
   if (kind === "button" || kind === "iconButton") {
     const inner = kind === "iconButton"
-      ? paths(sketchSparkle(w / 2, h / 2, Math.min(w, h) * 0.32, seedFor(shape.id, "glyph"), { stroke, fill: "#f4f4f4" }))
+      ? paths(sketchSparkle(w / 2, h / 2, Math.min(w, h) * 0.32, seedFor(shape.id, "glyph"), { stroke, fill: "#f4f4f4", fillStyle: "solid" }))
       : multilineTextMarkup(label || "Button", w / 2, h / 2 + 4, "#333333", 12.5);
     const fill = kind === "button" ? "#f4f4f4" : "#ffffff";
     const strokeWidth = kind === "button" ? 2 : undefined;
@@ -479,13 +507,13 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
       .map((raw, i) => {
         if (kind === "list") {
           const sep = i > 0 ? paths(sketchLine(4, rowH * i, w - 4, rowH * i, seedFor(shape.id, `sep${i}`), { stroke, strokeWidth: 0.8 })) : "";
-          return sep + multilineTextMarkup(raw, 10, rowH * i + rowH / 2 + 4, "#333333", 11.5, false);
+          return sep + multilineTextMarkup(raw, 10, rowH * i + rowH / 2 + 4, "#333333", 11.5, false, "start");
         }
         const indentLevel = (raw.match(/^ */)?.[0].length ?? 0) / 2;
         const text = raw.trimStart();
         const x = 8 + indentLevel * 14;
         const box = indentLevel === 0 ? `<g transform="translate(8 ${rowH * i + rowH / 2 - 4.5})">${paths(sketchRect(9, 9, seedFor(shape.id, `box${i}`), { stroke }))}</g>` : "";
-        return box + multilineTextMarkup(text, x + (indentLevel === 0 ? 14 : 0), rowH * i + rowH / 2 + 4, "#333333", 11, false);
+        return box + multilineTextMarkup(text, x + (indentLevel === 0 ? 14 : 0), rowH * i + rowH / 2 + 4, "#333333", 11, false, "start");
       })
       .join("");
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">${paths(sketchRect(w, h, seed, { stroke, fill: "#ffffff" }))}${rows}</g>`;
@@ -498,10 +526,10 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     const rowH = (h - headerH) / rows.length;
     const colW = w / columns.length;
     const headerMarkup = columns
-      .map((col, i) => multilineTextMarkup(col, colW * i + 8, headerH / 2 + 4, "#333333", 11, false) + (i > 0 ? paths(sketchLine(colW * i, 0, colW * i, h, seedFor(shape.id, `col${i}`), { stroke, strokeWidth: 0.8 })) : ""))
+      .map((col, i) => multilineTextMarkup(col, colW * i + 8, headerH / 2 + 4, "#333333", 11, false, "start") + (i > 0 ? paths(sketchLine(colW * i, 0, colW * i, h, seedFor(shape.id, `col${i}`), { stroke, strokeWidth: 0.8 })) : ""))
       .join("");
     const rowsMarkup = rows
-      .map((row, i) => (i > 0 ? paths(sketchLine(0, headerH + rowH * i, w, headerH + rowH * i, seedFor(shape.id, `row${i}`), { stroke, strokeWidth: 0.6 })) : "") + multilineTextMarkup(row, 8, headerH + rowH * i + rowH / 2 + 4, "#333333", 10.5, false))
+      .map((row, i) => (i > 0 ? paths(sketchLine(0, headerH + rowH * i, w, headerH + rowH * i, seedFor(shape.id, `row${i}`), { stroke, strokeWidth: 0.6 })) : "") + multilineTextMarkup(row, 8, headerH + rowH * i + rowH / 2 + 4, "#333333", 10.5, false, "start"))
       .join("");
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
       ${paths(sketchRect(w, h, seed, { stroke, fill: "#ffffff" }))}
@@ -514,7 +542,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     const progress = Math.min(1, Math.max(0, (shape.data.progress as number) ?? 0.6));
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
       ${paths(sketchRect(w, h, seed, { stroke, fill: "#ffffff" }))}
-      ${paths(sketchRect(w * progress, h, seedFor(shape.id, "fill"), { stroke, fill: "#8a8a8a" }))}
+      ${paths(sketchRect(w * progress, h, seedFor(shape.id, "fill"), { stroke, fill: "#8a8a8a", fillStyle: "solid" }))}
     </g>`;
   }
 
@@ -535,7 +563,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
       ${paths(sketchRoundedRect(w, h, seed, { stroke, fill: "#ffffff" }))}
       <g transform="translate(8 8)">${paths(sketchRoundedRect(w - 16, imgH - 10, seedFor(shape.id, "img"), { stroke }, 3))}</g>
-      ${multilineTextMarkup(label || "Titel", 8, imgH + 18, "#333333", 11.5, false)}
+      ${multilineTextMarkup(label || "Titel", 8, imgH + 18, "#333333", 11.5, false, "start")}
       ${paths(sketchLine(8, imgH + 28, w - 24, imgH + 28, seedFor(shape.id, "l1"), { stroke: "#8a8a8a", strokeWidth: 2 }))}
     </g>`;
   }
@@ -567,7 +595,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     const bodyH = h - 14;
     const d = `M 2 2 L ${w - 2} 2 L ${w - 2} ${bodyH} L ${tailW * 2} ${bodyH} L ${tailW} ${h - 2} L ${tailW} ${bodyH} L 2 ${bodyH} Z`;
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
-      ${paths(sketchPath(d, seed, { stroke, fill: "#fff8e0" }))}
+      ${paths(sketchPath(d, seed, { stroke, fill: "#fff8e0", fillStyle: "solid" }))}
       ${multilineTextMarkup(label || "Hinweis", w / 2, bodyH / 2 + 4, "#333333", 12)}
     </g>`;
   }
@@ -581,7 +609,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     const bodyH = h - 8;
     const d = `M 2 2 L ${w - 2} 2 L ${w - 2} ${bodyH} L ${w / 2 + tailW} ${bodyH} L ${w / 2} ${h - 2} L ${w / 2 - tailW} ${bodyH} L 2 ${bodyH} Z`;
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
-      ${paths(sketchPath(d, seed, { stroke, fill: "#333333" }))}
+      ${paths(sketchPath(d, seed, { stroke, fill: "#333333", fillStyle: "solid" }))}
       ${multilineTextMarkup(label || "Tooltip-Text", w / 2, bodyH / 2 + 4, "#ffffff", 11)}
     </g>`;
   }
@@ -590,8 +618,8 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
     const isVertical = h >= w;
     const thumbLength = (isVertical ? h : w) * 0.4;
     const thumb = isVertical
-      ? paths(sketchRect(w - 4, thumbLength, seedFor(shape.id, "thumb"), { stroke, fill: "#8a8a8a" }))
-      : paths(sketchRect(thumbLength, h - 4, seedFor(shape.id, "thumb"), { stroke, fill: "#8a8a8a" }));
+      ? paths(sketchRect(w - 4, thumbLength, seedFor(shape.id, "thumb"), { stroke, fill: "#8a8a8a", fillStyle: "solid" }))
+      : paths(sketchRect(thumbLength, h - 4, seedFor(shape.id, "thumb"), { stroke, fill: "#8a8a8a", fillStyle: "solid" }));
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">${paths(sketchRect(w, h, seed, { stroke, fill: "#f4f4f4" }))}${thumb}</g>`;
   }
 
@@ -605,7 +633,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
         const y = cursorY;
         const expanded = i === 0;
         cursorY += HEADER_H + (expanded ? bodyHeight : 0);
-        const header = `<g transform="translate(0 ${y})">${paths(sketchRect(w, HEADER_H, seedFor(shape.id, `hdr${i}`), { stroke, fill: "#f4f4f4" }))}${multilineTextMarkup(`${expanded ? "▾" : "▸"} ${section}`, 10, HEADER_H / 2 + 4, "#333333", 11, false)}${expanded ? `<g transform="translate(0 ${HEADER_H})">${paths(sketchRect(w, bodyHeight, seedFor(shape.id, "body"), { stroke }))}</g>` : ""}</g>`;
+        const header = `<g transform="translate(0 ${y})">${paths(sketchRect(w, HEADER_H, seedFor(shape.id, `hdr${i}`), { stroke, fill: "#f4f4f4" }))}${multilineTextMarkup(`${expanded ? "▾" : "▸"} ${section}`, 10, HEADER_H / 2 + 4, "#333333", 11, false, "start")}${expanded ? `<g transform="translate(0 ${HEADER_H})">${paths(sketchRect(w, bodyHeight, seedFor(shape.id, "body"), { stroke }))}</g>` : ""}</g>`;
         return header;
       })
       .join("");
@@ -635,8 +663,8 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
         const x = cursorX;
         cursorX += item.length * 6.5 + 20;
         const isLast = i === items.length - 1;
-        const text = multilineTextMarkup(item, x, h / 2 + 4, isLast ? "#333333" : stroke, 11.5, false);
-        const chevron = !isLast ? multilineTextMarkup("›", x + item.length * 6.5 + 8, h / 2 + 4, stroke, 12, false) : "";
+        const text = multilineTextMarkup(item, x, h / 2 + 4, isLast ? "#333333" : stroke, 11.5, false, "start");
+        const chevron = !isLast ? multilineTextMarkup("›", x + item.length * 6.5 + 8, h / 2 + 4, stroke, 12, false, "start") : "";
         return text + chevron;
       })
       .join("");
@@ -653,7 +681,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
         ${paths(sketchLine(4, 0, 4, 3, seedFor(shape.id, "ring1"), { stroke, strokeWidth: 1.4 }))}
         ${paths(sketchLine(12, 0, 12, 3, seedFor(shape.id, "ring2"), { stroke, strokeWidth: 1.4 }))}
       </g>
-      ${multilineTextMarkup(label || "TT.MM.JJJJ", 8, h / 2 + 4, "#999999", 11.5, false)}
+      ${multilineTextMarkup(label || "TT.MM.JJJJ", 8, h / 2 + 4, "#999999", 11.5, false, "start")}
     </g>`;
   }
 
@@ -669,7 +697,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
         const barH = innerH * ratio;
         const x = padding + i * (barW + barGap);
         const y = h - padding - barH;
-        return `<g transform="translate(${x} ${y})">${paths(sketchRect(barW, barH, seedFor(shape.id, `bar${i}`), { stroke, fill: "#8a8a8a" }))}</g>`;
+        return `<g transform="translate(${x} ${y})">${paths(sketchRect(barW, barH, seedFor(shape.id, `bar${i}`), { stroke, fill: "#8a8a8a", fillStyle: "solid" }))}</g>`;
       })
       .join("");
     return `<g transform="translate(${shape.position.x} ${shape.position.y})">
@@ -681,7 +709,7 @@ function renderWireframeShapeToStaticSvg(shape: ShapeInstance): string {
 
   if (kind === "icon") {
     const r = Math.min(w, h) * 0.42;
-    return `<g transform="translate(${shape.position.x} ${shape.position.y})">${paths(sketchSparkle(w / 2, h / 2, r, seed, { stroke, fill: "#f4f4f4" }))}</g>`;
+    return `<g transform="translate(${shape.position.x} ${shape.position.y})">${paths(sketchSparkle(w / 2, h / 2, r, seed, { stroke, fill: "#f4f4f4", fillStyle: "solid" }))}</g>`;
   }
 
   // Fallback für unbekannte/zukünftige Wireframe-Typen: einfache skizzierte Box.
@@ -695,7 +723,14 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
   const { x, y } = shape.position;
   const { width: w, height: h } = shape.size;
   const label = (shape.data.label as string) ?? "";
-  const labelMarkup = label ? multilineTextMarkup(label, w / 2, h / 2 + 5, "#2f3540", 13) : "";
+  const labelMarkup = label ? multilineTextMarkup(label, w / 2, h / 2 + 6, "#2f3540", 13) : "";
+  // Stil-Panel-Overrides (Z-15) - dieselben Resolver, die die Live-Komponenten
+  // in modules/bpmn/shapes/*.tsx benutzen. Ohne sie exportiert der Renderer
+  // stets die Default-Palette, egal was der Nutzer eingestellt hat.
+  const sf = (fallback: string) => resolveFill(shape, fallback);
+  const ss = (fallback: string) => resolveStroke(shape, fallback);
+  const sw = (fallback: number) => resolveStrokeWidth(shape, fallback);
+  const sd = (fallback?: string) => styleDashAttr(shape, fallback);
 
   if (shape.type.startsWith("wireframe.")) {
     return renderWireframeShapeToStaticSvg(shape);
@@ -708,8 +743,8 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
     const dashAttr = isInterrupting ? "" : ' stroke-dasharray="3 2"';
     const labelBelow = label ? multilineTextMarkup(label, r, h + 12, "#2f3540", 11, false) : "";
     return `<g transform="translate(${x} ${y})">
-      <circle cx="${r}" cy="${r}" r="${r - 1}" fill="#ffffff" stroke="#454d5a" stroke-width="2"${dashAttr} />
-      <circle cx="${r}" cy="${r}" r="${r - 5}" fill="none" stroke="#454d5a" stroke-width="1.3"${dashAttr} />
+      <circle cx="${r}" cy="${r}" r="${r - 1}" fill="${sf("#ffffff")}" stroke="${ss("#454d5a")}" stroke-width="${sw(2)}"${dashAttr} />
+      <circle cx="${r}" cy="${r}" r="${r - 5}" fill="none" stroke="${ss("#454d5a")}" stroke-width="1.3"${dashAttr} />
       ${triggerIconMarkup(trigger, r)}
       ${labelBelow}
     </g>`;
@@ -722,11 +757,11 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
     const strokeWidth = kind === "end" ? 3.5 : 2;
     const inner =
       kind === "intermediate"
-        ? `<circle cx="${r}" cy="${r}" r="${r - strokeWidth - 2.5}" fill="none" stroke="#454d5a" stroke-width="1.5" />`
+        ? `<circle cx="${r}" cy="${r}" r="${r - strokeWidth - 2.5}" fill="none" stroke="${ss("#454d5a")}" stroke-width="1.5" />`
         : "";
     const labelBelow = label ? multilineTextMarkup(label, r, h + 14, "#2f3540", 12, false) : "";
     return `<g transform="translate(${x} ${y})">
-      <circle cx="${r}" cy="${r}" r="${r - strokeWidth / 2}" fill="#ffffff" stroke="#454d5a" stroke-width="${strokeWidth}" />
+      <circle cx="${r}" cy="${r}" r="${r - strokeWidth / 2}" fill="${sf("#ffffff")}" stroke="${ss("#454d5a")}" stroke-width="${sw(strokeWidth)}"${sd()} />
       ${inner}
       ${triggerIconMarkup(trigger, r)}
       ${labelBelow}
@@ -740,12 +775,12 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
     const markerCy = h - markerSize / 2 - 4;
     const labelMarkupSub = isExpanded
       ? multilineTextMarkup(label || "Sub-Prozess", w / 2, 16, "#2f3540", 12, false)
-      : multilineTextMarkup(label || "Sub-Prozess", w / 2, h / 2 + 5, "#2f3540", 13);
+      : multilineTextMarkup(label || "Sub-Prozess", w / 2, h / 2, "#2f3540", 13);
     const verticalLine = !isExpanded
       ? `<line x1="${markerCx}" y1="${markerCy - 4}" x2="${markerCx}" y2="${markerCy + 4}" stroke="#454d5a" stroke-width="1.4" />`
       : "";
     return `<g transform="translate(${x} ${y})">
-      <rect width="${w}" height="${h}" rx="8" fill="${isExpanded ? "#ffffff" : "#f8fafc"}" stroke="#454d5a" stroke-width="1.5" />
+      <rect width="${w}" height="${h}" rx="8" fill="${sf(isExpanded ? "#ffffff" : "#f8fafc")}" stroke="${ss("#454d5a")}" stroke-width="${sw(1.5)}"${sd()} />
       ${labelMarkupSub}
       <rect x="${markerCx - markerSize / 2}" y="${markerCy - markerSize / 2}" width="${markerSize}" height="${markerSize}" rx="2" fill="#ffffff" stroke="#454d5a" stroke-width="1.2" />
       <line x1="${markerCx - 4}" y1="${markerCy}" x2="${markerCx + 4}" y2="${markerCy}" stroke="#454d5a" stroke-width="1.4" />
@@ -756,7 +791,7 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
   if (shape.type.startsWith("bpmn.task.")) {
     const kind = (shape.data.taskType as string) ?? "user";
     return `<g transform="translate(${x} ${y})">
-      <rect width="${w}" height="${h}" rx="8" fill="#f8fafc" stroke="#454d5a" stroke-width="1.5" />
+      <rect width="${w}" height="${h}" rx="8" fill="${sf("#f8fafc")}" stroke="${ss("#454d5a")}" stroke-width="${sw(1.5)}"${sd()} />
       ${taskIconMarkup(kind)}
       ${labelMarkup}
     </g>`;
@@ -767,7 +802,7 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
     const points = `${w / 2},0 ${w},${h / 2} ${w / 2},${h} 0,${h / 2}`;
     const labelBelow = label ? multilineTextMarkup(label, w / 2, h + 16, "#2f3540", 12, false) : "";
     return `<g transform="translate(${x} ${y})">
-      <polygon points="${points}" fill="#ffffff" stroke="#454d5a" stroke-width="1.5" />
+      <polygon points="${points}" fill="${sf("#ffffff")}" stroke="${ss("#454d5a")}" stroke-width="${sw(1.5)}"${sd()} />
       ${gatewaySymbolMarkup(kind, Math.min(w, h))}
       ${labelBelow}
     </g>`;
@@ -779,8 +814,8 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
     const foldLine = `M ${w - fold} 0 L ${w - fold} ${fold} L ${w} ${fold}`;
     const labelBelow = label ? multilineTextMarkup(label, w / 2, h + 16, "#2f3540", 12, false) : "";
     return `<g transform="translate(${x} ${y})">
-      <path d="${outline}" fill="#ffffff" stroke="#454d5a" stroke-width="1.5" />
-      <path d="${foldLine}" fill="none" stroke="#454d5a" stroke-width="1.5" />
+      <path d="${outline}" fill="${sf("#ffffff")}" stroke="${ss("#454d5a")}" stroke-width="${sw(1.5)}"${sd()} />
+      <path d="${foldLine}" fill="none" stroke="${ss("#454d5a")}" stroke-width="1.5" />
       ${labelBelow}
     </g>`;
   }
@@ -788,7 +823,7 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
   if (shape.type === "bpmn.pool" || shape.type === "bpmn.lane") {
     const titleBand = 24;
     return `<g transform="translate(${x} ${y})">
-      <rect width="${w}" height="${h}" fill="#ffffff" stroke="#454d5a" stroke-width="1" />
+      <rect width="${w}" height="${h}" fill="${sf("#ffffff")}" stroke="${ss("#454d5a")}" stroke-width="${sw(1)}"${sd()} />
       <rect width="${titleBand}" height="${h}" fill="${shape.type === "bpmn.pool" ? "#eef1f8" : "#f6f7fa"}" stroke="#454d5a" stroke-width="1" />
       <g transform="translate(${titleBand / 2} ${h / 2}) rotate(-90)">${multilineTextMarkup(label || (shape.type === "bpmn.pool" ? "Pool" : "Lane"), 0, 0, "#2f3540", shape.type === "bpmn.pool" ? 13 : 12)}</g>
     </g>`;
@@ -797,16 +832,16 @@ function renderShapeToStaticSvg(shape: ShapeInstance): string {
   if (shape.type === "text.label") {
     const showBorder = (shape.data.showBorder as boolean) ?? false;
     const borderMarkup = showBorder
-      ? `<rect width="${w}" height="${h}" fill="#ffffff" stroke="#454d5a" stroke-width="1.5" />`
+      ? `<rect width="${w}" height="${h}" fill="${sf("#ffffff")}" stroke="${ss("#454d5a")}" stroke-width="${sw(1.5)}"${sd()} />`
       : "";
     return `<g transform="translate(${x} ${y})">
       ${borderMarkup}
-      ${multilineTextMarkup(label || "Text", w / 2, h / 2 + 5, "#2f3540", 14)}
+      ${multilineTextMarkup(label || "Text", w / 2, h / 2, "#2f3540", 14)}
     </g>`;
   }
 
   return `<g transform="translate(${x} ${y})">
-    <rect width="${w}" height="${h}" rx="6" fill="#ffffff" stroke="#2f3540" stroke-width="1.5" />
+    <rect width="${w}" height="${h}" rx="6" fill="${sf("#ffffff")}" stroke="${ss("#2f3540")}" stroke-width="${sw(1.5)}"${sd()} />
     ${labelMarkup}
   </g>`;
 }

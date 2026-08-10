@@ -35,14 +35,24 @@ export function copySelectionToClipboard(): void {
   );
 
   clipboard = { shapes, connectors };
+  pasteCount = 0;
 }
 
 export function hasClipboardContent(): boolean {
   return clipboard !== null && clipboard.shapes.length > 0;
 }
 
+/** Anzahl der Einfuegevorgaenge seit dem letzten Kopieren - sorgt dafuer, dass
+ *  mehrfaches Strg+V die Kopien treppenartig versetzt statt sie alle exakt
+ *  uebereinander zu stapeln (dort waeren sie nicht als mehrere Elemente
+ *  erkennbar). Wird bei jedem copyToClipboard() zurueckgesetzt. */
+let pasteCount = 0;
+
 export function pasteClipboard(offset = { x: 30, y: 30 }): void {
   if (!clipboard || clipboard.shapes.length === 0) return;
+
+  pasteCount += 1;
+  const cascade = { x: offset.x * pasteCount, y: offset.y * pasteCount };
 
   const idMap = new Map<string, string>();
   clipboard.shapes.forEach((s) => idMap.set(s.id, generateId("shape")));
@@ -50,7 +60,7 @@ export function pasteClipboard(offset = { x: 30, y: 30 }): void {
   const newShapes: ShapeInstance[] = clipboard.shapes.map((s) => ({
     ...s,
     id: idMap.get(s.id)!,
-    position: { x: s.position.x + offset.x, y: s.position.y + offset.y },
+    position: { x: s.position.x + cascade.x, y: s.position.y + cascade.y },
     parentId: s.parentId && idMap.has(s.parentId) ? idMap.get(s.parentId) : undefined,
     // attachedToId nur umbiegen, wenn der Host selbst mitkopiert wurde (analog
     // zu parentId oben). War der Host nicht Teil der Auswahl, würde die Kopie
