@@ -2,25 +2,52 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Current state of this directory
+## Current state of this repository
 
-- `bpmn-editor-source/` — the actual Vite/React/TypeScript source project. **This is
-  where all real development happens.** Run `npm install` / `npm run dev` / `npm run
-  build` from inside this directory (see Build & run below).
-- `bpmn-editor.html` — the **built, single-file production artifact** (minified, ~300KB,
+**Important: the git repository (`mbosse73/draw-app`) currently contains only the built
+artifact and documentation — not the source project.** A fresh clone holds:
+
+- `bpmn-editor.html` — the **built, single-file production artifact** (minified,
   React 19 + Zustand + all app code inlined by `vite-plugin-singlefile`), i.e. a copy of
   `bpmn-editor-source/dist/index.html`. This is the deliverable actually given to the end
-  user (opened directly by double-click, no server) — never hand-edit it; after changing
-  `bpmn-editor-source/src/`, rebuild and copy `dist/index.html` back over it:
-  ```powershell
-  cd bpmn-editor-source; npm run build
-  Copy-Item dist/index.html ../bpmn-editor.html -Force
-  ```
-- `BPMN-Editor-Technische-Dokumentation.md` — a detailed technical handoff document (in
-  German) describing the architecture in depth; still accurate as of this writing.
+  user (opened directly by double-click, no server) — **never hand-edit it**, and never
+  try to reverse-engineer or patch the minified bundle. It is only ever replaced by a
+  fresh build from the source project.
+- `Lastenheft-Zeichenwerkzeuge.md` — requirements spec (German) for drawing-surface and
+  drawing-tool improvements, derived from a feature comparison with draw.io. Each
+  requirement (Z-01 … Z-19) states the observed current behavior with code references
+  and a priority (Muss/Soll/Kann). Its recommendation: the best effort/value next steps
+  are Z-06 (directional hover arrows to create connected shapes), Z-01/Z-03 (8-point
+  resize handles incl. multi-select) and Z-16 (zoom-to-fit). Consult it before working
+  on canvas/tool features.
+- `CLAUDE.md` — this file.
+- `README.md` — currently just the project name.
 
-Note: `bpmn-editor-source/` is not (yet) a git repository, so there is no history/diff
-to lean on — read the current file contents directly when in doubt.
+- `bpmn-editor-source/` — the actual Vite/React/TypeScript source project. **This is
+  where all real development happens** (run `npm install` / `npm run dev` / `npm run
+  build` from inside it — see Build & run below), but it exists only on the maintainer's
+  machine and **has not been committed to this repository yet**. If it is absent in your
+  checkout, source-level changes are impossible — say so explicitly rather than
+  attempting to edit `bpmn-editor.html`; the architecture sections below then serve as
+  reference for answering questions about the app.
+- `BPMN-Editor-Technische-Dokumentation.md` — a detailed technical handoff document (in
+  German) describing the architecture in depth; also not committed to this repository
+  (referenced here for when it is present locally).
+
+After changing `bpmn-editor-source/src/`, rebuild and copy `dist/index.html` back over
+the top-level artifact:
+
+```bash
+# bash
+cd bpmn-editor-source && npm run build
+cp dist/index.html ../bpmn-editor.html
+```
+
+```powershell
+# PowerShell (maintainer's machine is Windows)
+cd bpmn-editor-source; npm run build
+Copy-Item dist/index.html ../bpmn-editor.html -Force
+```
 
 ## Project summary (from the technical documentation)
 
