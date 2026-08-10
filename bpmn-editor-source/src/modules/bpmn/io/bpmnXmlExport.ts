@@ -22,6 +22,10 @@ interface BpmnMapping {
   tag: string;
   /** Zusätzliches XML-Attribut für den Trigger, z.B. bei Timer/Message/Error-Events. */
   extraAttrs?: string;
+  /** Kind-Element wie <bpmn:timerEventDefinition/>. Ohne dieses Element ist ein
+   *  Timer-/Nachrichten-/Fehler-Ereignis nach dem Export nicht mehr von einem
+   *  gewoehnlichen Ereignis zu unterscheiden (die Auspraegung ginge verloren). */
+  eventDefinition?: string;
 }
 
 /**
@@ -30,25 +34,37 @@ interface BpmnMapping {
  * komplett im XML-Export (kein Fallback möglich - im Gegensatz zum
  * Bild-Export gibt es in validem BPMN-XML kein generisches "Sonstiges"-Tag).
  */
+/** Trigger-Suffix des Shape-Typs -> BPMN-EventDefinition. */
+function eventDefinitionFor(shapeType: string): string | undefined {
+  if (shapeType.endsWith(".timer")) return "timerEventDefinition";
+  if (shapeType.endsWith(".message")) return "messageEventDefinition";
+  if (shapeType.endsWith(".error")) return "errorEventDefinition";
+  return undefined;
+}
+
 function bpmnTagFor(shape: ShapeInstance): BpmnMapping | null {
+  const eventDefinition = eventDefinitionFor(shape.type);
   switch (shape.type) {
     case "bpmn.event.start":
     case "bpmn.event.start.timer":
     case "bpmn.event.start.message":
-      return { tag: "startEvent" };
+      return { tag: "startEvent", eventDefinition };
     case "bpmn.event.intermediate":
     case "bpmn.event.intermediate.timer":
     case "bpmn.event.intermediate.message":
-      return { tag: "intermediateThrowEvent" };
+      // Timer und Nachricht sind in BPMN 2.0 ausschliesslich Catch-Events
+      // (ein Timer laesst sich nicht "werfen"); nur das schmucklose
+      // Zwischenereignis bleibt ein Throw-Event.
+      return { tag: eventDefinition ? "intermediateCatchEvent" : "intermediateThrowEvent", eventDefinition };
     case "bpmn.event.end":
     case "bpmn.event.end.error":
     case "bpmn.event.end.message":
-      return { tag: "endEvent" };
+      return { tag: "endEvent", eventDefinition };
     case "bpmn.boundaryEvent.timer":
     case "bpmn.boundaryEvent.message":
     case "bpmn.boundaryEvent.error": {
       const interrupting = (shape.data.interrupting as boolean) ?? true;
-      return { tag: "boundaryEvent", extraAttrs: ` cancelActivity="${interrupting}"` };
+      return { tag: "boundaryEvent", extraAttrs: ` cancelActivity="${interrupting}"`, eventDefinition };
     }
     case "bpmn.task.none":
       // Generischer Task ohne festgelegten Typ - im BPMN-Standard das
@@ -148,7 +164,8 @@ function buildFlowElementXml(
     </bpmn:subProcess>`;
   }
 
-  return `<bpmn:${mapping.tag} id="${safeId(shape.id)}"${nameAttr}${mapping.extraAttrs ?? ""}${attachedAttr}>${inXml}${outXml}</bpmn:${mapping.tag}>`;
+  const eventDefXml = mapping.eventDefinition ? `<bpmn:${mapping.eventDefinition} id="${safeId(shape.id)}_def" />` : "";
+  return `<bpmn:${mapping.tag} id="${safeId(shape.id)}"${nameAttr}${mapping.extraAttrs ?? ""}${attachedAttr}>${inXml}${outXml}${eventDefXml}</bpmn:${mapping.tag}>`;
 }
 
 function buildSequenceFlowXml(c: ConnectorInstanceLike): string {
@@ -231,10 +248,25 @@ export function buildBpmnXml(): string {
     })
     .join("\n      ");
 
-  const processXml =
+  // Pools werden in BPMN als <participant> in einer <collaboration> abgebildet.
+  // Ohne das zeigte die BPMNShape des Pools auf ein Element, das es in der
+  // Datei gar nicht gibt - importierende Werkzeuge lehnen das ab.
+  const collaborationXml =
     pools.length > 0
+      ? `<bpmn:collaboration id="Collaboration_1">
+    ${pools
+      .map(
+        (pool) =>
+          `<bpmn:participant id="${safeId(pool.id)}" name="${escapeXml((pool.data.label as string) ?? "")}" processRef="${processId}" />`
+      )
+      .join("\n    ")}
+  </bpmn:collaboration>`
+      : "";
+
+  const processXml =
+    lanes.length > 0
       ? `<bpmn:process id="${processId}" isExecutable="false">
-    ${lanes.length > 0 ? `<bpmn:laneSet>\n      ${laneSetXml}\n    </bpmn:laneSet>` : ""}
+    ${`<bpmn:laneSet>\n      ${laneSetXml}\n    </bpmn:laneSet>`}
     ${elementXml}
     ${flowXml}
     ${textAnnotationXml}
@@ -281,9 +313,10 @@ export function buildBpmnXml(): string {
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
                   id="Definitions_1"
                   targetNamespace="http://bpmn.io/schema/bpmn">
+  ${collaborationXml}
   ${processXml}
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${processId}">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${pools.length > 0 ? "Collaboration_1" : processId}">
       ${shapeDiXml}
       ${edgeDiXml}
     </bpmndi:BPMNPlane>
