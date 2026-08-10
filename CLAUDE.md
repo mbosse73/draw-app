@@ -34,29 +34,24 @@ Artefakt und Dokumentation — nicht das Quellprojekt.** Ein frischer Clone enth
 - `bpmn-editor-source/` — das eigentliche Vite/React/TypeScript-Quellprojekt. **Hier
   findet die gesamte echte Entwicklung statt** (`npm install` / `npm run dev` /
   `npm run build` von innerhalb dieses Verzeichnisses ausführen — siehe Build & Start
-  unten). Seit 08/2026 im Repository.
+  unten), aber es existiert nur auf dem Rechner des Maintainers und **ist nicht in
+  dieses Repository committet**. Fehlt es im Checkout, sind Änderungen auf
+  Quellcode-Ebene unmöglich — das explizit sagen, statt zu versuchen, das
+  Wurzel-`index.html` zu editieren; die Architektur-Abschnitte unten dienen dann als
+  Referenz, um Fragen zur App zu beantworten.
 
-  > **⚠️ Der committete Quellstand ist älter als das ausgelieferte Wurzel-`index.html`
-  > und erzeugt beim Bauen NICHT das aktuell ausgelieferte Artefakt.**
-  > Ein `npm run build` mit anschließendem Kopieren über `../index.html` würde die
-  > ausgelieferte App massiv zurückwerfen. Vor einem Build klären, ob ein aktuellerer
-  > Quellstand vorliegt.
-  >
-  > Nachgewiesene Lücken (Quellstand → ausgeliefertes Artefakt):
-  > - registrierte Shape-Typen: **32 → 67** — das gesamte Modul
-  >   `modules/wireframe/` (41 Typen, „Desktop-Wireframes") fehlt im Quellstand,
-  >   `App.tsx` ruft nur `registerBpmnModule()` auf
-  > - `roughjs` fehlt in `package.json` (Abhängigkeit des Wireframe-Moduls)
-  > - im Quellstand nicht vorhanden: Menüleiste, Lineale/Hilfslinien, generisches
-  >   Stil-Panel (Füllfarbe/Linie/Transparenz/Schatten), Sperren/Ausblenden,
-  >   Spiegeln, Formatpinsel, Ausrichten-Menü (`AlignMenu.tsx`),
-  >   An-Fenster-anpassen, Druckseiten-Vorschau, Vorlagen-/Bibliotheksverwaltung,
-  >   Theme-Umschaltung (`ui/Theme/`), draw.io-Import/-Export, JSON-Export,
-  >   Drucken/PDF
-  >
-  > Die Architektur-Abschnitte unten beschreiben weiterhin den **Zielzustand** (also
-  > das Artefakt) und sind als Referenz für Fragen zur App gültig; sie decken sich
-  > an den genannten Stellen nicht mit dem committeten Quellstand.
+  > **⚠️ Vorsicht bei nachgereichten Quellstand-Archiven.** Im 08/2026 wurde ein ZIP
+  > des Quellprojekts eingespielt und nach Prüfung wieder entfernt, weil es deutlich
+  > **älter war als das ausgelieferte `index.html`**: 32 statt 67 registrierter
+  > Shape-Typen, kein Modul `modules/wireframe/` (41 Typen, „Desktop-Wireframes";
+  > `App.tsx` rief nur `registerBpmnModule()` auf), kein `roughjs`, und ohne
+  > Menüleiste, Lineale/Hilfslinien, Stil-Panel, Sperren/Ausblenden, Spiegeln,
+  > Formatpinsel, Ausrichten-Menü, An-Fenster-anpassen, Druckseiten-Vorschau,
+  > Vorlagenverwaltung, Theme-Umschaltung sowie draw.io-, JSON- und PDF-Export.
+  > Ein Build daraus hätte die ausgelieferte App massiv zurückgeworfen.
+  > **Vor jedem Build aus einem nachgereichten Quellstand prüfen, ob er zum Artefakt
+  > passt** — schneller Test: Zahl der registrierten Shape-Typen und Vorhandensein
+  > von `src/modules/wireframe/`.
 - `BPMN-Editor-Technische-Dokumentation.md` — ein ausführliches technisches
   Übergabedokument (deutsch), das die Architektur im Detail beschreibt; ebenfalls nicht
   in dieses Repository committet (hier referenziert für den Fall, dass es lokal
