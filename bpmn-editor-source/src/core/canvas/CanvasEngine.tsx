@@ -1294,6 +1294,7 @@ export function CanvasEngine() {
           };
           newShape.position = getAttachedPosition(newShape, host);
           addShape(newShape);
+          selectShape(newShape.id);
           pushHistorySnapshot();
           return;
         }
@@ -1313,8 +1314,9 @@ export function CanvasEngine() {
       };
       const parentId = definition.isContainer ? undefined : findContainerAt(shapes, center);
 
+      const id = `shape_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       addShape({
-        id: `shape_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id,
         type: shapeType,
         position,
         size: definition.defaultSize,
@@ -1322,9 +1324,14 @@ export function CanvasEngine() {
         zIndex: Object.keys(shapes).length,
         parentId,
       });
+      // Frisch abgelegtes Element gleich auswaehlen: Sonst ist nach dem Ablegen
+      // nichts selektiert, das Eigenschaften-Panel bleibt leer und
+      // Kopieren/Loeschen/Ausrichten sind ausgegraut - der Nutzer muss das eben
+      // erst platzierte Element zusaetzlich anklicken.
+      selectShape(id);
       pushHistorySnapshot();
     },
-    [viewport, addShape, shapes]
+    [viewport, addShape, selectShape, shapes]
   );
 
   // --- Rechtsklick-Kontextmenü: Shape ---
@@ -1820,6 +1827,12 @@ export function CanvasEngine() {
             return (
               <g
                 key={shape.id}
+                /* Stabile Kennung fuer automatisierte Pruefungen: Ohne sie
+                   muessen Testskripte Elemente ueber Position/Reihenfolge
+                   raten, was schon zu falschen Messwerten gefuehrt hat.
+                   Reine Diagnose-Attribute - die App liest sie nie. */
+                data-shape-id={shape.id}
+                data-shape-type={shape.type}
                 onMouseDown={(e) => handleShapeMouseDown(e, shape.id)}
                 onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
                 onContextMenu={(e) => handleShapeContextMenu(e, shape.id)}

@@ -113,8 +113,9 @@ for (const { titel, typ } of typen) {
   await page.waitForTimeout(90);
 
   const live = await page.evaluate(() => {
-    const g = [...document.querySelectorAll(".canvas-container svg g[transform] > g")]
-      .filter((x) => !x.classList.contains("connector-layer"))[0];
+    // Ueber die stabile Kennung statt ueber Position/Reihenfolge - letzteres
+    // greift daneben, sobald eine weitere Ebene dazwischenkommt.
+    const g = document.querySelector(".canvas-container svg g[data-shape-id]");
     const innen = g?.querySelector('g[transform^="translate"]');
     return innen ? innen.outerHTML : null;
   });

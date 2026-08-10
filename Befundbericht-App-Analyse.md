@@ -33,6 +33,13 @@
 > Ein Zug daran verschob das Shape. Die Griffe liegen jetzt in einer eigenen
 > Ebene ueber den Shapes.
 >
+> Auch die kleineren Vorschlaege aus Abschnitt 5 sind umgesetzt: Frisch
+> abgelegte Elemente werden sofort ausgewaehlt (vorher blieben Kopieren,
+> Loeschen und das Eigenschaften-Panel nach dem Ablegen leer bzw. ausgegraut),
+> und jedes Element traegt im DOM `data-shape-id`/`data-shape-type`.
+> `scripts/check-export.mjs` sucht seither ueber diese Kennung statt ueber
+> Position und Reihenfolge.
+>
 > Der folgende Text ist der urspruengliche Befund und bleibt als Beleg und
 > Reproduktionsanleitung unveraendert stehen.
 
