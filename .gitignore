@@ -1,0 +1,11 @@
+# Persönliche Claude-Code-Einstellungen (Berechtigungen pro Rechner) —
+# die geteilte Konfiguration steht in .claude/settings.json.
+.claude/settings.local.json
+
+# Wegwerf-Prüfskripte und Messungen gehören nicht ins Repository
+scratch/
+*.tmp
+
+# Betriebssystem
+.DS_Store
+Thumbs.db

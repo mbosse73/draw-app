@@ -3,6 +3,72 @@
 Diese Datei gibt Claude Code (claude.ai/code) Orientierung für die Arbeit mit dem Code
 in diesem Repository.
 
+---
+
+## Schnellstart (das Wichtigste in 60 Sekunden)
+
+**Was das hier ist:** Ein offline laufender BPMN-2.0-Diagrammeditor. Ausgeliefert wird
+eine einzige Datei, `index.html` im Wurzelverzeichnis — das gebaute Bundle. Der Quellcode
+liegt komplett unter `bpmn-editor-source/` (Vite + React 19 + TypeScript + Zustand).
+
+**Alle Befehle laufen aus `bpmn-editor-source/`:**
+
+```bash
+npm run dev            # Dev-Server, http://localhost:5173
+npm run build          # Produktions-Build -> dist/index.html
+npm run verify         # Lint + Build + check:export  (vor jedem Commit)
+npm run ship           # verify + dist/index.html über ../index.html kopieren
+npm run check:export   # 64 Shape-Typen: Bildschirm gegen SVG-Export, pixelweise
+```
+
+**Vier Regeln, die nicht verhandelbar sind:**
+
+1. `index.html` im Wurzelverzeichnis **niemals von Hand editieren** und das minifizierte
+   Bundle nie reverse-engineeren oder patchen — es entsteht ausschließlich durch
+   `npm run ship`. (Ein PreToolUse-Hook blockiert Schreibzugriffe darauf.)
+2. `src/core/` darf **nichts** über ein Modul wissen — kein BPMN-Begriff, kein Import
+   aus `src/modules/`, auch nicht im Kommentar.
+3. Nach jeder Änderung an Shapes oder Export läuft `npm run verify`. Ein vergessener
+   Export-Renderer erzeugt **keinen Fehler**, sondern still eine falsche Ausgabe.
+4. Geändert wird nur die Quelle; ausgeliefert wird nur über `npm run ship`. Ist
+   `index.html` nicht md5-gleich zu `dist/index.html`, ist die Auslieferung veraltet.
+
+**Projektsprache ist Deutsch** — Code-Kommentare, Commit-Nachrichten, Dokumente und
+Bezeichner in neuen Funktionen folgen dem vorhandenen deutschen Stil.
+
+## Wo liegt was (Aufgabe → Datei)
+
+| Aufgabe | Einstiegspunkt |
+|---|---|
+| Maus-Interaktion, Ziehen, Selektieren, Zoom/Pan | `core/canvas/CanvasEngine.tsx` (die zentrale Datei) |
+| Zustand, Aktionen auf Shapes/Verbindern | `core/state/canvasStore.ts` |
+| Undo/Redo | `core/state/history.ts` |
+| Verbinder: Pfad, Routing, Andockpunkte | `core/canvas/connectorPath.ts`, `pathRouting.ts`, `connectorGeometry.ts` |
+| Neuer Shape-Typ | Skill `shape-hinzufuegen` (vierfache Pflege!) |
+| Neuer Diagrammtyp / Modul | Skill `modul-hinzufuegen` |
+| Bild-Export (SVG/PNG/Druck) | `core/io/imageExport.ts` + `modules/*/io/staticSvg.ts` |
+| BPMN-XML- / draw.io-Export | `modules/bpmn/io/bpmnXmlExport.ts`, `drawioExport.ts` |
+| Speichern, Laden, Auto-Save | `core/io/diagramSerializer.ts`, `autosave.ts` |
+| Toolbar, Menüleiste, Panels | `ui/Toolbar/`, `ui/PropertiesPanel/`, `ui/Toolbox/` |
+| Aussehen, Themes, Design-Tokens | `App.css` (das einzige Stylesheet) |
+| UI-Verhalten im Browser prüfen | Skill `app-im-browser-pruefen` |
+
+## Werkzeuge dieses Repositorys (`.claude/`)
+
+| Datei | Wirkung |
+|---|---|
+| `hooks/session-start.mjs` | Installiert fehlende `node_modules`, baut einmalig falls `dist/` fehlt, macht Chromium für `check:export` auffindbar, meldet Branch/Sauberkeit/Artefakt-Stand zum Sitzungsbeginn |
+| `hooks/guard-artefakt.mjs` | Blockiert jeden Schreibzugriff auf `index.html` im Wurzelverzeichnis |
+| `settings.json` | Registriert beide Hooks, erlaubt die üblichen Bau- und Git-Befehle ohne Rückfrage |
+| `skills/shape-hinzufuegen/` | Checkliste für neue/geänderte Shape-Typen |
+| `skills/modul-hinzufuegen/` | Anleitung für einen neuen Diagrammtyp als Modul |
+| `skills/app-im-browser-pruefen/` | Playwright-Rezepte inkl. der Irrtümer, die schon zu falschen Befunden geführt haben |
+
+Die Skills sind bewusst ausgelagert statt hier eingebettet: Sie werden nur geladen, wenn
+die jeweilige Aufgabe ansteht, und halten diese Datei lesbar.
+
+---
+
 ## Aktueller Stand dieses Repositorys
 
 Ein frischer Clone enthält:
@@ -27,8 +93,14 @@ Ein frischer Clone enthält:
   Aufwand/Nutzen-Verhältnis haben Z-06 (gerichtete Hover-Pfeile zum Erzeugen verbundener
   Shapes), Z-01/Z-03 (Resize-Griffe an allen 8 Punkten inkl. Mehrfachauswahl) und Z-16
   (Zoom-an-Fenster-anpassen). Vor Arbeiten an Canvas-/Werkzeug-Features konsultieren.
+- `Befundbericht-App-Analyse.md` — Ergebnis der systematischen Fehlersuche 08/2026
+  (F-01 … F-11). Alle Befunde sind abgearbeitet; das Dokument bleibt als Beleg, welche
+  Fehlerklassen dieses Projekt real hervorbringt (stille Export-Abweichungen,
+  Trefferzonen-Überdeckung, vergessene Registrierungen).
 - `CLAUDE.md` — diese Datei.
 - `README.md` — derzeit nur der Projektname.
+- `.claude/` — Hooks, Berechtigungen und Skills für die Arbeit mit Claude Code
+  (siehe Tabelle im Schnellstart oben).
 
 - `bpmn-editor-source/` — das eigentliche Vite/React/TypeScript-Quellprojekt. **Hier
   findet die gesamte echte Entwicklung statt** (`npm install` / `npm run dev` /
@@ -54,20 +126,17 @@ Ein frischer Clone enthält:
   in dieses Repository committet (hier referenziert für den Fall, dass es lokal
   vorhanden ist).
 
-Nach Änderungen an `bpmn-editor-source/src/` neu bauen und `dist/index.html` über das
-Top-Level-Artefakt kopieren:
+Nach Änderungen an `bpmn-editor-source/src/` genügt ein Befehl — er baut, prüft und
+kopiert `dist/index.html` über das Top-Level-Artefakt (identisch unter bash und
+PowerShell, der Rechner des Maintainers läuft unter Windows):
 
 ```bash
-# bash
-cd bpmn-editor-source && npm run build
-cp dist/index.html ../index.html
+cd bpmn-editor-source && npm run ship
 ```
 
-```powershell
-# PowerShell (der Rechner des Maintainers läuft unter Windows)
-cd bpmn-editor-source; npm run build
-Copy-Item dist/index.html ../index.html -Force
-```
+Der Kopierschritt war früher Handarbeit und wurde regelmäßig vergessen — dann war die
+App gebaut, ausgeliefert wurde aber weiter der alte Stand, ohne jede Fehlermeldung.
+`scripts/publish-artifact.mjs` erledigt und bestätigt ihn jetzt per Prüfsumme.
 
 ## Projektüberblick (aus der technischen Dokumentation)
 
@@ -90,26 +159,32 @@ Laufzeit-Abhängigkeiten: `react`, `react-dom`, `zustand`, plus **`roughjs`**
 bewusste, dokumentierte Ausnahme, siehe `modules/wireframe/shapes/sketch.ts` und
 Doku-Abschnitt 4.7). Bewusst **keine** Diagramm-Bibliothek (z.B. `bpmn-js`) — sämtliche
 Rendering- und Interaktionslogik ist Eigenbau, gemäß ursprünglicher Spezifikation. Es
-gibt **eine einzige automatisierte Pruefung**: `npm run check:export` vergleicht jeden
+gibt **eine einzige automatisierte Prüfung**: `npm run check:export` vergleicht jeden
 registrierten Shape-Typ pixelweise zwischen Bildschirm und SVG-Export (siehe
-`scripts/check-export.mjs`, Exit-Code 1 bei Abweichung). Darueber hinaus lief Verifikation historisch über
-Wegwerf-Skripte per `npx tsx <script>.ts` direkt in Node (Zustand und Kernlogik sind
-DOM-unabhängig), die nach Gebrauch gelöscht wurden.
+`scripts/check-export.mjs`, Exit-Code 1 bei Abweichung); `npm run verify` bündelt sie mit
+Lint und Build. Darüber hinaus läuft Verifikation über Wegwerf-Skripte per
+`npx tsx <script>.ts` direkt in Node (Zustand und Kernlogik sind DOM-unabhängig), die
+nach Gebrauch gelöscht werden — siehe „Verifikation ohne Testsuite" am Ende.
 
 ### Build & Start
 
 Alle Befehle laufen von innerhalb `bpmn-editor-source/`:
 
-```bash
-npm install
-npm run dev      # Dev-Server, http://localhost:5173
-npm run build    # Produktions-Build -> dist/index.html (das einteilige Deliverable)
-npm run preview  # den Produktions-Build lokal testen
-```
+| Befehl | Bedeutung |
+|---|---|
+| `npm install` | Abhängigkeiten (erledigt in Claude-Sitzungen der SessionStart-Hook) |
+| `npm run dev` | Dev-Server, http://localhost:5173 |
+| `npm run build` | Produktions-Build → `dist/index.html` |
+| `npm run preview` | den Produktions-Build lokal testen |
+| `npm run lint` | Oxlint |
+| `npm run check:export` | 64 Shape-Typen pixelweise Bildschirm gegen SVG-Export (braucht einen Build) |
+| `npm run verify` | `lint` + `build` + `check:export` — die Standardprüfung vor jedem Commit |
+| `npm run artefakt` | nur kopieren: `dist/index.html` → `../index.html`, mit Prüfsummen-Bestätigung |
+| `npm run ship` | `verify` + `artefakt` — der komplette Auslieferungsweg |
 
-Nach `npm run build` die `dist/index.html` über die Top-Level-Datei `../index.html`
-kopieren, um die Änderung tatsächlich auszuliefern (siehe oben) — die beiden sind sonst
-nicht synchron.
+`check:export` sucht sich Chromium selbst (ausdrücklicher `CHECK_EXPORT_CHROMIUM`-Pfad,
+sonst ein Browser unter `PLAYWRIGHT_BROWSERS_PATH`, sonst Playwrights eigene Suche);
+notfalls einmalig `npx playwright install chromium`.
 
 ## Zentrales Architekturprinzip: Core/Plugin-Trennung
 
@@ -279,6 +354,7 @@ vier-)fache Pflege:**
 Etwas davon zu vergessen erzeugt keinen Fehler — es produziert stillschweigend ein
 falsches/fehlendes Element in genau dieser einen Ausgabe. **`npm run check:export`
 meldet genau das** und sollte nach jeder Änderung an Shapes oder Export laufen.
+Die vollständige Checkliste dafür liegt im Skill `shape-hinzufuegen`.
 
 **Zum Wireframe-Modul:** `modules/wireframe/shapes/sketch.ts` kapselt
 `rough.generator()` aus `roughjs` als pure, DOM-freie Funktionen (`sketchRect`,
@@ -387,8 +463,19 @@ für Y/Z immer `e.key` verwenden.
 
 ## Verifikation ohne Testsuite
 
-Es gibt keinen allgemeinen Test-Runner im Projekt — nur `npm run check:export`
-(Bildschirm gegen SVG-Export, alle Shape-Typen). Der etablierte Ansatz für isolierte Logik
+Drei Stufen, von billig nach teuer:
+
+1. **`npm run verify`** — Lint, Build, `check:export`. Deckt alles ab, was die
+   Shape-Darstellung betrifft, und läuft in gut einer Minute.
+2. **Wegwerf-Skript in Node** (`npx tsx <datei>.ts`) für DOM-unabhängige Logik —
+   Store-Aktionen, `pathRouting.ts`, `autoLayout.ts`, `attachmentGeometry.ts`,
+   Serialisierer. Danach löschen, nicht committen.
+3. **Playwright gegen `dist/index.html`** für alles Interaktive — Rezepte und
+   Fallstricke im Skill `app-im-browser-pruefen`. Was dort nicht messbar ist
+   (Optik-Urteile, Bedienbarkeit), braucht Bestätigung durch den Nutzer im echten
+   Browser.
+
+Es gibt keinen allgemeinen Test-Runner im Projekt. Der etablierte Ansatz für isolierte Logik
 (Store-Actions, `pathRouting.ts`, `autoLayout.ts`, `attachmentGeometry.ts`,
 Serialisierer-/Export-Funktionen) ist ein Wegwerf-Skript per `npx tsx <script>.ts`, da
 diese DOM-unabhängig sind. UI-Verhalten lässt sich in dieser Umgebung nicht
@@ -399,3 +486,26 @@ minimalen `getItem`/`setItem`-Klasse mocken. ES-Modul-Hoisting beachten:
 Daten vor einem `import`-Statement zu setzen läuft nicht wirklich vor der
 Store-Initialisierung — stattdessen dynamisches `await import(...)` nach dem Aufsetzen
 der Mocks verwenden.
+
+## Arbeitsweise in diesem Repository
+
+- **Deutsch** in Code-Kommentaren, Commit-Nachrichten, Dokumenten und Antworten.
+- **Commit-Nachrichten** im Stil der vorhandenen Historie: eine Zeile, Infinitiv,
+  was und warum (`Frisch abgelegte Elemente auswaehlen, stabile DOM-Kennung ergaenzen`).
+- **Vor jedem Commit `npm run verify`**, vor jeder Auslieferung `npm run ship`.
+  Zum Commit gehören dann Quelle **und** neu gebautes `index.html`.
+- **Wegwerf-Skripte** in den Scratchpad-Ordner, nicht ins Repository.
+- **Große Refactorings an `CanvasEngine.tsx` nicht aus Hygienegründen** — die
+  wechselseitig exklusiven Refs sind eine ungeschriebene Invariante (siehe oben).
+- **Zuerst den Code lesen, dann den Dokumenten glauben.** Lastenheft und Befundbericht
+  sind Momentaufnahmen; mehrfach war eine dort als offen geführte Anforderung längst
+  umgesetzt (und einmal ein Befund schlicht falsch).
+
+### Offener Stand (08/2026)
+
+- `Befundbericht-App-Analyse.md`: alle Befunde F-01 … F-11 abgearbeitet.
+- `Lastenheft-Zeichenwerkzeuge.md`: einzig **Z-19** (Tab-Arbeitsablauf) ist noch offen.
+- Nicht gemacht und bewusst abgelehnt: BPMN-XML-**Import**, Modellvalidierung,
+  Mehrseitigkeit, `conditionExpression`, Auto-Layout innerhalb von Pools.
+- Ungetestet im großen Maßstab: A*-Routing bei mehr als ~50 Verbindern (kein Caching
+  über Verbinder hinweg). Bei 64 Shapes / 57 Verbindern gemessen: konstant 60 fps.

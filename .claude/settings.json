@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(cd:*)",
+      "Bash(npm install)",
+      "Bash(npm install --no-audit --no-fund)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run preview:*)",
+      "Bash(npm run check:export:*)",
+      "Bash(npm run verify:*)",
+      "Bash(npm run ship:*)",
+      "Bash(npm run artefakt:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx tsx:*)",
+      "Bash(node scripts/:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git restore:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git push -u origin:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(md5sum:*)",
+      "Bash(diff:*)",
+      "Read(//home/user/draw-app/**)"
+    ],
+    "deny": [
+      "Read(//home/user/draw-app/bpmn-editor-source/node_modules/**)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.mjs\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-artefakt.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

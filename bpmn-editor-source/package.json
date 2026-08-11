@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check:export": "node scripts/check-export.mjs"
+    "check:export": "node scripts/check-export.mjs",
+    "artefakt": "node scripts/publish-artifact.mjs",
+    "verify": "npm run lint && npm run build && npm run check:export",
+    "ship": "npm run verify && npm run artefakt"
   },
   "dependencies": {
     "react": "^19.2.7",

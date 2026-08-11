@@ -1,32 +1,24 @@
-# React + TypeScript + Vite
+# bpmn-editor-source
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Das Quellprojekt der App (Vite 8, React 19, TypeScript, Zustand 5). Das Build-Ergebnis
+`dist/index.html` ist das komplette Deliverable — eine einzige, offline lauffähige
+HTML-Datei, die als `../index.html` ausgeliefert wird.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev            # Dev-Server, http://localhost:5173
+npm run build          # Produktions-Build -> dist/index.html
+npm run lint           # Oxlint
+npm run check:export   # alle Shape-Typen: Bildschirm gegen SVG-Export, pixelweise
+npm run verify         # lint + build + check:export
+npm run artefakt       # dist/index.html -> ../index.html (mit Prüfsummen-Bestätigung)
+npm run ship           # verify + artefakt
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Architektur, Entwurfsentscheidungen und Stolperfallen stehen in `../CLAUDE.md`.
+Kurzfassung der beiden wichtigsten Regeln:
+
+- `src/core/` darf nichts über ein Modul unter `src/modules/` wissen.
+- Die Optik jedes Shapes existiert mehrfach (React-Komponente, `io/staticSvg.ts` des
+  Moduls, `ToolboxIcon.tsx`, ggf. `bpmnXmlExport.ts`). `npm run check:export` findet
+  Abweichungen, die sonst niemand bemerkt.

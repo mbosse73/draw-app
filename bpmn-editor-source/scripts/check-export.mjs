@@ -9,10 +9,11 @@
  * (fehlendes `fillStyle: "solid"`, zentrierte statt linksbündiger Labels,
  * ignoriertes Stil-Panel). Dieser Test hätte jeden davon sofort gemeldet.
  *
- * Aufruf:  npm run check:export
+ * Aufruf:  npm run check:export   (oder `npm run verify` inkl. Build davor)
  * Voraussetzung: `npm run build` wurde ausgeführt (der Test prüft dist/index.html).
- * Einmalig nötig: `npx playwright install chromium`. Liegt bereits ein Chromium
- * auf dem Rechner, genügt stattdessen CHECK_EXPORT_CHROMIUM=<pfad/zum/chrome>.
+ * Chromium wird selbst gesucht (siehe findeChromium unten). Findet sich keines,
+ * einmalig `npx playwright install chromium` - oder einen vorhandenen Browser
+ * über CHECK_EXPORT_CHROMIUM=<pfad/zum/chrome> vorgeben.
  *
  * Exit-Code 1, sobald ein Typ mehr als TOLERANZ Prozent seiner "Tinte"
  * abweicht - damit taugt der Test auch als CI-Schritt.
@@ -32,7 +33,30 @@ if (!fs.existsSync(APP)) {
   process.exit(2);
 }
 
-const chromiumPfad = process.env.CHECK_EXPORT_CHROMIUM;
+/** Chromium finden, ohne dass jede Umgebung erst `npx playwright install`
+ *  braucht: ausdrücklich gesetzter Pfad > ein Browser unter
+ *  PLAYWRIGHT_BROWSERS_PATH (so ist die Web-Sitzung vorkonfiguriert) >
+ *  Playwrights eigene Suche. */
+function findeChromium() {
+  if (process.env.CHECK_EXPORT_CHROMIUM) return process.env.CHECK_EXPORT_CHROMIUM;
+  const basis = process.env.PLAYWRIGHT_BROWSERS_PATH;
+  if (!basis || !fs.existsSync(basis)) return null;
+  for (const eintrag of fs.readdirSync(basis).filter((e) => e.startsWith("chromium"))) {
+    // Manche Umgebungen legen direkt eine ausführbare Datei (oder einen
+    // Symlink darauf) ab, andere den entpackten Playwright-Ordner.
+    for (const rel of [[], ["chrome-linux", "chrome"], ["chrome-linux", "headless_shell"], ["chrome-mac", "Chromium.app", "Contents", "MacOS", "Chromium"]]) {
+      const p = path.join(basis, eintrag, ...rel);
+      try {
+        if (fs.statSync(p).isFile()) return p;
+      } catch {
+        /* Pfadvariante gibt es hier nicht */
+      }
+    }
+  }
+  return null;
+}
+
+const chromiumPfad = findeChromium();
 const browser = await chromium.launch(chromiumPfad ? { executablePath: chromiumPfad } : {});
 const page = await browser.newPage({ viewport: { width: 1500, height: 950 } });
 const konsole = [];
